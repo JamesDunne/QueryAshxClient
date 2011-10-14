@@ -1,4 +1,4 @@
-<%@ WebHandler Language="C#" Class="AdHocQuery.AdHocQueryServiceProvider" %>
+﻿<%@ WebHandler Language="C#" Class="AdHocQuery.AdHocQueryServiceProvider" %>
 <%@ Assembly Name="System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" %>
 <%@ Assembly Name="System.Data, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" %>
 <%@ Assembly Name="System.Runtime.Serialization, Version=3.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" %>
@@ -42,9 +42,11 @@ namespace AdHocQuery
                 rsp.StatusCode = 200;
                 rsp.ContentType = "text/html";
 
+                System.IO.TextWriter tw = rsp.Output;
+                
                 // Head:
-                rsp.Output.Write("<!doctype html><html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><title>SQL Query Builder</title>");
-                rsp.Output.Write(@"<style type=""text/css"">
+                tw.Write("<!doctype html><html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><title>SQL Query Builder</title>");
+                tw.Write(@"<style type=""text/css"">
 body
 {
     margin-top: 4px;
@@ -162,7 +164,7 @@ div#resultsInner
 
 #resultsTable>thead
 {
-    background-color: #cff;
+    background-color: #bee;
     padding-bottom: 0.5em;
 }
 
@@ -183,6 +185,11 @@ td.nullvalue
     background-color: #880;
 }
 
+th.coltype
+{
+    background-color: #6cc;
+}
+
 #footer
 {
     padding-top: 2em;
@@ -191,49 +198,82 @@ td.nullvalue
 	font-size: small;
 }
 </style>");
-                rsp.Output.Write("</head><body bgcolor=#ffffff text=#222222 link=#1122cc vlink=#6611cc alink=#d14836>");
 
                 string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
 
                 // Pull FORM values:
-                csname  = req.Form["csname"];
-                cs      = req.Form["cs"];
+                csname = req.Form["csname"];
+                cs = req.Form["cs"];
                 withCTEidentifier = req.Form["withCTEidentifier"];
                 withCTEexpression = req.Form["withCTEexpression"];
-                select  = req.Form["select"];
-                from    = req.Form["from"];
-                where   = req.Form["where"];
+                select = req.Form["select"];
+                from = req.Form["from"];
+                where = req.Form["where"];
                 groupBy = req.Form["groupBy"];
-                having  = req.Form["having"];
+                having = req.Form["having"];
                 orderBy = req.Form["orderBy"];
 
+                // Dynamically show/hide the rows depending on which FORM values we have provided:
+                tw.Write("<style type=\"text/css\">");
+                
+                bool displayWITH = !String.IsNullOrEmpty(withCTEidentifier) && !String.IsNullOrEmpty(withCTEexpression);
+                bool displayFROM = !String.IsNullOrEmpty(from);
+                bool displayWHERE = !String.IsNullOrEmpty(where);
+                bool displayGROUPBY = !String.IsNullOrEmpty(groupBy);
+                bool displayHAVING = !String.IsNullOrEmpty(having);
+                bool displayORDERBY = !String.IsNullOrEmpty(orderBy);
+                tw.Write("tr#rowWITH    {{ {0} }}", displayWITH    ? String.Empty : "display: none;");
+                tw.Write("tr#rowFROM    {{ {0} }}", displayFROM    ? String.Empty : "display: none;");
+                tw.Write("tr#rowWHERE   {{ {0} }}", displayWHERE   ? String.Empty : "display: none;");
+                tw.Write("tr#rowGROUPBY {{ {0} }}", displayGROUPBY ? String.Empty : "display: none;");
+                tw.Write("tr#rowHAVING  {{ {0} }}", displayHAVING  ? String.Empty : "display: none;");
+                tw.Write("tr#rowORDERBY {{ {0} }}", displayORDERBY ? String.Empty : "display: none;");
+
+                tw.Write("</style>");
+                
+                // Now write out the javascript to allow toggling of show/hide per each query builder row:
+                tw.Write("<script type=\"text/javascript\"><!--"); tw.Write(@"
+
+//-->
+</script>");
+
+                // Start the <body> section:
+                tw.Write("</head><body bgcolor=#ffffff text=#222222 link=#1122cc vlink=#6611cc alink=#d14836>");
+
                 // Query builder form:
-                rsp.Output.Write("<div><form method=\"post\">");
-                rsp.Output.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
-                rsp.Output.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
-                rsp.Output.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
-                rsp.Output.Write("</tbody></table></div>");
-                rsp.Output.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>Query Builder</caption><tbody>");
-                rsp.Output.Write("<tr><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='withCTEidentifier' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='withCTEexpression' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td>",
+                tw.Write("<div><form method=\"post\">");
+                tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
+                tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
+                tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
+                tw.Write("</tbody></table></div>");
+                tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>Query Builder</caption><tbody>");
+                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='withCTEidentifier' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='withCTEexpression' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
                     HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
                     HttpUtility.HtmlEncode(withCTEexpression),
                     (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
                 );
-                rsp.Output.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
-                rsp.Output.Write("<tr><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
-                rsp.Output.Write("<tr><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
-                rsp.Output.Write("<tr><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
-                rsp.Output.Write("<tr><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
-                rsp.Output.Write("<tr><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
-                rsp.Output.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' /></td>");
-                rsp.Output.Write("</tbody></table></div>");
-                rsp.Output.Write("</form></div>");
+                tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
+                tw.Write("<input id='btnWITH'    type='button' value='WITH' />");
+                tw.Write("<input id='btnFROM'    type='button' value='FROM' />");
+                tw.Write("<input id='btnWHERE'   type='button' value='WHERE' />");
+                tw.Write("<input id='btnGROUPBY' type='button' value='GROUP BY' />");
+                tw.Write("<input id='btnHAVING'  type='button' value='HAVING' />");
+                tw.Write("<input id='btnORDERBY' type='button' value='ORDER BY' />");
+                tw.Write("</td></tr>");
+                tw.Write("</tbody></table></div>");
+                tw.Write("</form></div>");
 
                 if (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
                 {
                     string query;
-                    string[] header;
-                    IEnumerable<object[]> rows;
+                    string[,] header;
+                    IEnumerable<IEnumerable<object>> rows;
                     long execTimeMsec;
 
                     // Execute the query:
@@ -241,48 +281,55 @@ td.nullvalue
 
                     if (query != null)
                     {
-                        rsp.Output.Write("<div id='query'><h3>Query</h3><pre>{0}</pre></div>", HttpUtility.HtmlEncode(query));
+                        tw.Write("<div id='query'><h3>Query</h3><pre>{0}</pre></div>", HttpUtility.HtmlEncode(query));
                     }
 
                     if (errMessage != null)
                     {
-                        rsp.Output.Write("<div id='resultsView'><h3>Error</h3><div id='resultsInner'><span class='exception'>{0}</span></div></div>", HttpUtility.HtmlEncode(errMessage));
+                        tw.Write("<div id='resultsView'><h3>Error</h3><div id='resultsInner'><span class='exception'>{0}</span></div></div>", HttpUtility.HtmlEncode(errMessage));
                         goto end;
                     }
 
                     // Output table:
-                    rsp.Output.Write("<div id='resultsView'><h3>Results</h3><div id='resultsInner'><strong>Execution time:</strong>&nbsp;{0:N0} ms", execTimeMsec);
-                    rsp.Output.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'><thead><tr><th>Row</th>");
-                    foreach (string hr in header)
-                    {
-                        rsp.Output.Write("<th>{0}</th>", HttpUtility.HtmlEncode(hr));
-                    }
-                    rsp.Output.Write("</tr></thead><tbody>");
+                    tw.Write("<div id='resultsView'><h3>Results</h3><div id='resultsInner'><strong>Execution time:</strong>&nbsp;{0:N0} ms", execTimeMsec);
+                    tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
 
                     int rowNumber = 1;
-                    foreach (object[] row in rows)
+                    foreach (IEnumerable<object> row in rows)
                     {
-                        rsp.Output.Write("<tr>");
-                        rsp.Output.Write("<td class='rn'>{0}</td>", rowNumber++);
+                        if ((rowNumber - 1) % 10 == 0)
+                        {
+                            // Write header:
+                            if (rowNumber > 1) tw.Write("</tbody>\n");
+                            tw.Write("<thead><tr><th>Row</th>");
+                            for (int h = 0; h <= header.GetUpperBound(0); ++h)
+                            {
+                                tw.Write("<th class='colname'>{0}</th><th class='coltype'>{1}</th>", HttpUtility.HtmlEncode(header[h, 0]), HttpUtility.HtmlEncode(header[h, 1]));
+                            }
+                            tw.Write("</tr></thead>\n<tbody>");
+                        }
                         
-                        for (int i = 0; i < row.Length; ++i)
+                        tw.Write("<tr>");
+                        tw.Write("<td class='rn'>{0}</td>", rowNumber++);
+                        
+                        foreach (object col in row)
                         {
                             string tdclass = null;
-                            string col;
-                            if ((row[i] == null) || (row[i] == DBNull.Value))
+                            string colvalue;
+                            if ((col == null) || (col == DBNull.Value))
                             {
                                 // Display NULL value:
-                                col = "NULL";
+                                colvalue = "NULL";
                                 tdclass = "nullvalue";
                             }
                             else
                             {
                                 // Check type of the vaue:
-                                Type ctype = row[i].GetType();
+                                Type ctype = col.GetType();
                                 if (ctype == typeof(byte[]))
                                 {
                                     // Display byte[] as 0xHEXCHARS:
-                                    byte[] bytes = (byte[])row[i];
+                                    byte[] bytes = (byte[])col;
                                     const string hexChars = "0123456789ABCDEF";
                                     
                                     StringBuilder sbhex = new StringBuilder(2 + 2 * bytes.Length);
@@ -292,28 +339,28 @@ td.nullvalue
                                         sbhex.Append(hexChars[bytes[j] >> 4]);
                                         sbhex.Append(hexChars[bytes[j] & 0xF]);
                                     }
-                                    col = sbhex.ToString();
+                                    colvalue = sbhex.ToString();
                                     tdclass = "hexvalue";
                                 }
                                 else
                                 {
                                     // All else, use TypeConverter.ConvertToString:
                                     var tc = System.ComponentModel.TypeDescriptor.GetConverter(ctype);
-                                    col = tc.ConvertToString(row[i]);
+                                    colvalue = tc.ConvertToString(col);
                                 }
                             }
 
-                            rsp.Output.Write("<td{1}>{0}</td>", HttpUtility.HtmlEncode(col), tdclass == null ? String.Empty : " class='" + tdclass + "'");
+                            tw.Write("<td colspan='2'{1}>{0}</td>", HttpUtility.HtmlEncode(colvalue), tdclass == null ? String.Empty : " class='" + tdclass + "'");
                         } // for (int i = 0; i < row.Length; ++i)
 
-                        rsp.Output.Write("</tr>");
+                        tw.Write("</tr>\n");
                     } // foreach (object[] row in rows)
-                    rsp.Output.Write("</tbody></table></div></div>");
+                    tw.Write("</tbody>\n</table></div></div>");
                 }
 
                 // End:
             end:
-                rsp.Output.Write("</body></html>");
+                tw.Write("</body></html>");
             }
             catch (Exception ex)
             {
@@ -344,9 +391,9 @@ td.nullvalue
             [QueryParameter("ORDER BY ...")]                        string orderBy,
 
             out string query,
-            out string[] header,
+            out string[,] header,
             out long execTimeMsec,
-            out IEnumerable<object[]> rows
+            out IEnumerable<IEnumerable<object>> rows
         )
         {
             query = null;
@@ -441,11 +488,20 @@ td.nullvalue
             // Generate the header:
             int fieldCount = dr.FieldCount;
 
-            header = new string[fieldCount];
+#if false
+            header = new string[fieldCount][];
             for (int i = 0; i < fieldCount; ++i)
             {
-                header[i] = String.Format("[{0}] {1}", dr.GetName(i), formatSQLtype(dr, i));
+                header[i] = new string[2] { dr.GetName(i), formatSQLtype(dr, i) };
             }
+#else
+            header = new string[fieldCount,2];
+            for (int i = 0; i < fieldCount; ++i)
+            {
+                header[i, 0] = dr.GetName(i);
+                header[i, 1] = formatSQLtype(dr, i);
+            }
+#endif
 
             rows = enumerateResults(conn, cmd, dr);
 
@@ -453,7 +509,7 @@ td.nullvalue
             return null;
         }
 
-        private IEnumerable<object[]> enumerateResults(System.Data.SqlClient.SqlConnection conn, System.Data.SqlClient.SqlCommand cmd, System.Data.SqlClient.SqlDataReader dr)
+        private IEnumerable<IEnumerable<object>> enumerateResults(System.Data.SqlClient.SqlConnection conn, System.Data.SqlClient.SqlCommand cmd, System.Data.SqlClient.SqlDataReader dr)
         {
             using (conn)
             using (cmd)
@@ -465,13 +521,27 @@ td.nullvalue
 
                 while (dr.Read())
                 {
+#if false
                     int nc = dr.GetValues(values);
                     System.Diagnostics.Debug.Assert(nc == fieldCount);
 
                     yield return values;
+#else
+                    yield return enumerateColumns(dr, fieldCount);
+#endif
                 }
 
                 conn.Close();
+            }
+        }
+
+        private IEnumerable<object> enumerateColumns(System.Data.SqlClient.SqlDataReader dr, int fieldCount)
+        {
+            for (int i = 0; i < fieldCount; ++i)
+            {
+                // TODO: stream using System.Data.IDataRecord
+                object col = dr.GetValue(i);
+                yield return col;
             }
         }
 
