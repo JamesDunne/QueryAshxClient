@@ -259,6 +259,20 @@ $(function() {
     // Enable the tabbed view:
     $('#tabs').tabs();
     $('#tabs').tabs('select', " + (actionExecute ? "1" : "0") + @");
+
+    $('#toggleColumnTypeHeaders').click(function() {
+        // Toggle the visibility of the coltype header cells:
+        $('th.coltype').each(function() {
+            if ($(this).is(':visible')) {
+                $(this).hide();
+                $(this).prev().attr('colspan', 2);
+            } else {
+                $(this).show();
+                $(this).prev().removeAttr('colspan');
+            }
+        });
+        return false;
+    });
 });
 //-->
 </script>");
@@ -365,7 +379,10 @@ $(function() {
                     }
 
                     // Output table:
-                    tw.Write("<div id='resultsView'><h3>Results</h3><div id='resultsInner'><strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
+                    tw.Write("<div id='resultsView'>");
+                    tw.Write("<button id='toggleColumnTypeHeaders'>Show Column Types</button><br/>");
+                    tw.Write("<h3>Results</h3><div id='resultsInner'>");
+                    tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
                     tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
 
                     int rowNumber = 1;
