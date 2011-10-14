@@ -10,13 +10,14 @@
 
 // This file was sourced from gist.github.com/1286172
 
-// TODO: log all queries to a rolling text file using tab-delimited records; gzip any logs with datestamps older than today.
-
 // TODO: add optional TOP(N) clause
 
 // This changes depending on if attached to a debugger, apparently.
 //#define DEBUG
 #undef DEBUG
+
+// Enable logging of queries to ~/query.ashx.log
+#define LogQueries
 
 using System;
 using System.Collections.Generic;
@@ -365,7 +366,7 @@ $(function() {
                 tw.Write("</div>"); // id='tab-builder'
 
                 // Execution:
-                if (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase))
+                if (actionExecute)
                 {
                     string query;
                     string[,] header;
@@ -386,6 +387,26 @@ $(function() {
                         tw.Write("<div id='resultsView'><h3>Error</h3><div id='resultsInner'><span class='exception'>{0}</span></div></div>", HttpUtility.HtmlEncode(errMessage));
                         goto end;
                     }
+
+#if LogQueries
+                    try
+                    {
+                        // Log query to a rolling log file:
+                        System.IO.File.AppendAllText(
+                            System.IO.Path.Combine(ctx.Server.MapPath("~/"), @"query.ashx.log"),
+                            String.Concat(
+                                encodeTabDelimited(DateTimeOffset.Now.ToString()), "\t",
+                                encodeTabDelimited(query),
+                                Environment.NewLine
+                            ),
+                            Encoding.UTF8
+                        );
+                    }
+                    catch
+                    {
+                        // Not much to do here. Don't really care to warn the user if it fails.
+                    }
+#endif
 
                     // Output table:
                     tw.Write("<div id='resultsView'>");
@@ -490,6 +511,25 @@ $(function() {
         private string getFormOrQueryValue(string name)
         {
             return ctx.Request.Form[name] ?? ctx.Request.QueryString[name];
+        }
+
+        private static string encodeTabDelimited(string value)
+        {
+            StringBuilder sbResult = new StringBuilder(value.Length * 3 / 2);
+            foreach (char ch in value)
+            {
+                if (ch == '\t') sbResult.Append("\\t");
+                else if (ch == '\n') sbResult.Append("\\n");
+                else if (ch == '\r') sbResult.Append("\\r");
+                else if (ch == '\'') sbResult.Append("\\\'");
+                else if (ch == '\"') sbResult.Append("\\\"");
+                else if (ch == '\\') sbResult.Append("\\\\");
+                else
+                {
+                    sbResult.Append(ch);
+                }
+            }
+            return sbResult.ToString();
         }
 
         public string QuerySQL(
