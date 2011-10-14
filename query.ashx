@@ -10,6 +10,9 @@
 
 // This file was sourced from gist.github.com/1286172
 
+// TODO: log all queries to a rolling text file using tab-delimited records; gzip any logs with datestamps older than today.
+// TODO: make 'link' action to convert FORM post into URL with query-string
+
 // This changes depending on if attached to a debugger, apparently.
 //#define DEBUG
 #undef DEBUG
@@ -129,7 +132,7 @@ pre
 	background-color: #ee9;
 }
 
-.input-table>tbody>tr:nth-child(odd)
+.input-table>tbody>tr:nth-child(even)
 {
 	background-color: #eef;
 }
@@ -137,7 +140,7 @@ pre
 div#resultsView
 {
     display: block;
-	margin-top: 1em;
+	margin-top: 0.5em;
 }
 
 div#resultsInner
@@ -230,10 +233,20 @@ th.coltype
                 tw.Write("tr#rowORDERBY {{ {0} }}", displayORDERBY ? String.Empty : "display: none;");
 
                 tw.Write("</style>");
+
+                // Import jQuery 1.6.2:
+                tw.Write(@"<script src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
                 
                 // Now write out the javascript to allow toggling of show/hide per each query builder row:
-                tw.Write("<script type=\"text/javascript\"><!--"); tw.Write(@"
-
+                tw.Write(@"<script type=""text/javascript""><!--
+$(function() {
+    $('#btnWITH')   .click(function() { $('#rowWITH').toggle(); return false; });
+    $('#btnFROM')   .click(function() { $('#rowFROM').toggle(); return false; });
+    $('#btnWHERE')   .click(function() { $('#rowWHERE').toggle(); return false; });
+    $('#btnGROUPBY').click(function() { $('#rowGROUPBY').toggle(); return false; });
+    $('#btnHAVING') .click(function() { $('#rowHAVING').toggle(); return false; });
+    $('#btnORDERBY').click(function() { $('#rowORDERBY').toggle(); return false; });
+});
 //-->
 </script>");
 
@@ -247,6 +260,15 @@ th.coltype
                 tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
                 tw.Write("</tbody></table></div>");
                 tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>Query Builder</caption><tbody>");
+                tw.Write("<tr><td>&nbsp;</td><td>");
+                tw.Write("<input id='btnWITH'    type='button' value='WITH' />");
+                tw.Write("<input id='btnSELECT'  type='button' value='SELECT' disabled='disabled' />");
+                tw.Write("<input id='btnFROM'    type='button' value='FROM' />");
+                tw.Write("<input id='btnWHERE'   type='button' value='WHERE' />");
+                tw.Write("<input id='btnGROUPBY' type='button' value='GROUP BY' />");
+                tw.Write("<input id='btnHAVING'  type='button' value='HAVING' />");
+                tw.Write("<input id='btnORDERBY' type='button' value='ORDER BY' />");
+                tw.Write("</td></tr>");
                 tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='withCTEidentifier' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='withCTEexpression' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
                     HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
                     HttpUtility.HtmlEncode(withCTEexpression),
@@ -259,12 +281,6 @@ th.coltype
                 tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
                 tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
                 tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
-                tw.Write("<input id='btnWITH'    type='button' value='WITH' />");
-                tw.Write("<input id='btnFROM'    type='button' value='FROM' />");
-                tw.Write("<input id='btnWHERE'   type='button' value='WHERE' />");
-                tw.Write("<input id='btnGROUPBY' type='button' value='GROUP BY' />");
-                tw.Write("<input id='btnHAVING'  type='button' value='HAVING' />");
-                tw.Write("<input id='btnORDERBY' type='button' value='ORDER BY' />");
                 tw.Write("</td></tr>");
                 tw.Write("</tbody></table></div>");
                 tw.Write("</form></div>");
