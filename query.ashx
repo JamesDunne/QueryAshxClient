@@ -12,6 +12,8 @@
 
 // TODO: log all queries to a rolling text file using tab-delimited records; gzip any logs with datestamps older than today.
 
+// TODO: add optional TOP(N) clause
+
 // This changes depending on if attached to a debugger, apparently.
 //#define DEBUG
 #undef DEBUG
@@ -206,8 +208,8 @@ th.coltype
                 // Pull FORM values:
                 csname = getFormOrQueryValue("csname");
                 cs = getFormOrQueryValue("cs");
-                withCTEidentifier = getFormOrQueryValue("withCTEidentifier");
-                withCTEexpression = getFormOrQueryValue("withCTEexpression");
+                withCTEidentifier = getFormOrQueryValue("wi");
+                withCTEexpression = getFormOrQueryValue("we");
                 select = getFormOrQueryValue("select");
                 from = getFormOrQueryValue("from");
                 where = getFormOrQueryValue("where");
@@ -241,7 +243,7 @@ th.coltype
 $(function() {
     $('#btnWITH')   .click(function() { $('#rowWITH').toggle(); return false; });
     $('#btnFROM')   .click(function() { $('#rowFROM').toggle(); return false; });
-    $('#btnWHERE')   .click(function() { $('#rowWHERE').toggle(); return false; });
+    $('#btnWHERE')  .click(function() { $('#rowWHERE').toggle(); return false; });
     $('#btnGROUPBY').click(function() { $('#rowGROUPBY').toggle(); return false; });
     $('#btnHAVING') .click(function() { $('#rowHAVING').toggle(); return false; });
     $('#btnORDERBY').click(function() { $('#rowORDERBY').toggle(); return false; });
@@ -262,9 +264,25 @@ $(function() {
                 string execURL = execUri.Uri.ToString();
                 
                 // Query builder form:
-                tw.Write("<div><form method=\"post\">");
+                tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
                 tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
+#if true
+                // Drop-down for named connection strings:
+                tw.Write("<tr><td>Named connection string:</td><td><select name='csname'>");
+                tw.Write("<option value=''{0}>-- Use custom connection string --</option>", String.Equals(csname ?? "", "", StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty);
+                foreach (System.Configuration.ConnectionStringSettings css in System.Configuration.ConfigurationManager.ConnectionStrings)
+                {
+                    tw.Write("<option value='{0}'{3}>[{1}] -- {2}</option>",
+                        HttpUtility.HtmlAttributeEncode(css.Name),
+                        HttpUtility.HtmlEncode(css.Name),
+                        HttpUtility.HtmlEncode(css.ConnectionString),
+                        String.Equals(csname, css.Name, StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty
+                    );
+                }
+                tw.Write("</select></td></tr>");
+#else
                 tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
+#endif
                 tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
                 tw.Write("</tbody></table></div>");
                 tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>Query Builder</caption><tbody>");
@@ -277,7 +295,7 @@ $(function() {
                 tw.Write("<input id='btnHAVING'  type='button' value='HAVING' />");
                 tw.Write("<input id='btnORDERBY' type='button' value='ORDER BY' />");
                 tw.Write("</td></tr>");
-                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='withCTEidentifier' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='withCTEexpression' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
+                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
                     HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
                     HttpUtility.HtmlEncode(withCTEexpression),
                     (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
@@ -503,10 +521,20 @@ $(function() {
 
             try
             {
+                // Open the connection:
                 conn.Open();
+
+                // Set the TRANSACTION ISOLATION LEVEL to READ UNCOMMITTED so that we don't block any application queries:
+                var tmpcmd = conn.CreateCommand();
+                tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
+                tmpcmd.ExecuteNonQuery();
+
+                // Time the execution and grab the SqlDataReader:
                 System.Diagnostics.Stopwatch swTimer = System.Diagnostics.Stopwatch.StartNew();
                 dr = cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
                 swTimer.Stop();
+
+                // Record the execution time:
                 execTimeMsec = swTimer.ElapsedMilliseconds;
             }
             catch (Exception ex)
