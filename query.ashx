@@ -8,7 +8,7 @@
 // Designed and implemented by James S. Dunne (github.com/JamesDunne)
 // on 2011-10-13
 
-// This file was sourced from gist.github.com/
+// This file was sourced from gist.github.com/1286172
 
 // This changes depending on if attached to a debugger, apparently.
 //#define DEBUG
