@@ -47,7 +47,7 @@ namespace AdHocQuery
                 rsp.ContentType = "text/html";
 
                 System.IO.TextWriter tw = rsp.Output;
-                
+
                 // Head:
                 tw.Write("<!doctype html><html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><title>SQL Query Builder</title>");
                 tw.Write(@"<style type=""text/css"">
@@ -75,6 +75,8 @@ a
 
 h3
 {
+    margin-top: 0.5em;
+    margin-bottom: 0.25em;
 	font-family: Tahoma, Arial;
 	font-weight: bold;
 	font-size: small;
@@ -86,14 +88,13 @@ p, li
 	font-weight: normal;
 	font-size: small;
 	margin-top: 0.25em;
-	margin-bottom: 0.25em;
+	margin-bottom: 0em;
 }
 
 .exception
 {
 	font-weight: bold;
 	font-size: small;
-    margin-left: 2em;
 }
 
 pre, textarea, .monospaced, td.hexvalue
@@ -109,7 +110,7 @@ pre, textarea, .monospaced, td.hexvalue
 pre
 {
 	font-size: small;
-	margin-left: 2em;
+	margin-left: 1em;
 	overflow-x: auto;
 }
 
@@ -117,7 +118,6 @@ pre
 {
 	font-family: Tahoma, Segoe UI, Arial;
 	font-size: small;
-	margin-left: 2em;
 	padding-bottom: 1em;
 }
 
@@ -130,7 +130,7 @@ pre
 
 .input-table>caption,.input-table>thead,.input-table>tfoot
 {
-	background-color: #ee9;
+	background-color: #3ef;
 }
 
 .input-table>tbody>tr:nth-child(even)
@@ -146,9 +146,9 @@ div#resultsView
 
 div#resultsInner
 {
-	margin-left: 2em;
+	margin-left: 1em;
     max-width: 1280;
-    max-height: 32em;
+    max-height: 30em;
     overflow-x: auto;
     overflow-y: auto;
 }
@@ -217,27 +217,32 @@ th.coltype
                 having = getFormOrQueryValue("having");
                 orderBy = getFormOrQueryValue("orderBy");
 
+                bool actionExecute = (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase));
+
                 // Dynamically show/hide the rows depending on which FORM values we have provided:
                 tw.Write("<style type=\"text/css\">");
-                
+
                 bool displayWITH = !String.IsNullOrEmpty(withCTEidentifier) && !String.IsNullOrEmpty(withCTEexpression);
                 bool displayFROM = !String.IsNullOrEmpty(from);
                 bool displayWHERE = !String.IsNullOrEmpty(where);
                 bool displayGROUPBY = !String.IsNullOrEmpty(groupBy);
                 bool displayHAVING = !String.IsNullOrEmpty(having);
                 bool displayORDERBY = !String.IsNullOrEmpty(orderBy);
-                tw.Write("tr#rowWITH    {{ {0} }}", displayWITH    ? String.Empty : "display: none;");
-                tw.Write("tr#rowFROM    {{ {0} }}", displayFROM    ? String.Empty : "display: none;");
-                tw.Write("tr#rowWHERE   {{ {0} }}", displayWHERE   ? String.Empty : "display: none;");
+                tw.Write("tr#rowWITH    {{ {0} }}", displayWITH ? String.Empty : "display: none;");
+                tw.Write("tr#rowFROM    {{ {0} }}", displayFROM ? String.Empty : "display: none;");
+                tw.Write("tr#rowWHERE   {{ {0} }}", displayWHERE ? String.Empty : "display: none;");
                 tw.Write("tr#rowGROUPBY {{ {0} }}", displayGROUPBY ? String.Empty : "display: none;");
-                tw.Write("tr#rowHAVING  {{ {0} }}", displayHAVING  ? String.Empty : "display: none;");
+                tw.Write("tr#rowHAVING  {{ {0} }}", displayHAVING ? String.Empty : "display: none;");
                 tw.Write("tr#rowORDERBY {{ {0} }}", displayORDERBY ? String.Empty : "display: none;");
 
                 tw.Write("</style>");
 
                 // Import jQuery 1.6.2:
-                tw.Write(@"<script src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
-                
+                tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
+                // Import jQueryUI 1.8.5:
+                tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js""></script>");
+                tw.Write(@"<link rel=""stylesheet"" type=""text/css"" href=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/redmond/jquery-ui.css"" />");
+
                 // Now write out the javascript to allow toggling of show/hide per each query builder row:
                 tw.Write(@"<script type=""text/javascript""><!--
 $(function() {
@@ -247,6 +252,13 @@ $(function() {
     $('#btnGROUPBY').click(function() { $('#rowGROUPBY').toggle(); return false; });
     $('#btnHAVING') .click(function() { $('#rowHAVING').toggle(); return false; });
     $('#btnORDERBY').click(function() { $('#rowORDERBY').toggle(); return false; });
+
+    // Enable buttons:
+    $('input:submit, a, button').button();
+
+    // Enable the tabbed view:
+    $('#tabs').tabs();
+    $('#tabs').tabs('select', " + (actionExecute ? "1" : "0") + @");
 });
 //-->
 </script>");
@@ -262,10 +274,50 @@ $(function() {
                     .ToArray()
                 );
                 string execURL = execUri.Uri.ToString();
-                
-                // Query builder form:
+
+                // Create the main form wrapper:
                 tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
-                tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
+
+                // Tabs container:
+                tw.Write("<div id='tabs'>");
+                tw.Write("<ul>");
+                tw.Write("<li><a href='#tab-builder'>Query Builder</a></li>");
+                if (actionExecute)
+                    tw.Write("<li><a href='#tab-results'>Results</a></li>");
+                tw.Write("</ul>");
+
+
+                // Query-builder tab:
+                tw.Write("<div id='tab-builder'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
+                tw.Write("<tr><td>&nbsp;</td><td>");
+                tw.Write("<button id='btnWITH'    >WITH</button>");
+                tw.Write("<button id='btnSELECT' disabled='disabled' >SELECT</button>");
+                tw.Write("<button id='btnFROM'    >FROM</button>");
+                tw.Write("<button id='btnWHERE'   >WHERE</button>");
+                tw.Write("<button id='btnGROUPBY' >GROUP BY</button>");
+                tw.Write("<button id='btnHAVING'  >HAVING</button>");
+                tw.Write("<button id='btnORDERBY' >ORDER BY</button>");
+                tw.Write("</td></tr>");
+                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
+                    HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
+                    HttpUtility.HtmlEncode(withCTEexpression),
+                    (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
+                );
+                tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
+                // Create a link to share this query with:
+                tw.Write("<a href=\"{0}\">link</a>", execURL);
+                tw.Write("</td></tr>");
+                tw.Write("</tbody></table>");
+
+
+                // Connection Manager:
+                tw.Write("<div id='connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
 #if true
                 // Drop-down for named connection strings:
                 tw.Write("<tr><td>Named connection string:</td><td><select name='csname'>");
@@ -285,34 +337,11 @@ $(function() {
 #endif
                 tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
                 tw.Write("</tbody></table></div>");
-                tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>Query Builder</caption><tbody>");
-                tw.Write("<tr><td>&nbsp;</td><td>");
-                tw.Write("<input id='btnWITH'    type='button' value='WITH' />");
-                tw.Write("<input id='btnSELECT'  type='button' value='SELECT' disabled='disabled' />");
-                tw.Write("<input id='btnFROM'    type='button' value='FROM' />");
-                tw.Write("<input id='btnWHERE'   type='button' value='WHERE' />");
-                tw.Write("<input id='btnGROUPBY' type='button' value='GROUP BY' />");
-                tw.Write("<input id='btnHAVING'  type='button' value='HAVING' />");
-                tw.Write("<input id='btnORDERBY' type='button' value='ORDER BY' />");
-                tw.Write("</td></tr>");
-                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
-                    HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
-                    HttpUtility.HtmlEncode(withCTEexpression),
-                    (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
-                );
-                tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
-                // Create a link to share this query with:
-                tw.Write("<a href=\"{0}\">link</a>", execURL);
-                tw.Write("</td></tr>");
-                tw.Write("</tbody></table></div>");
-                tw.Write("</form></div>");
 
+
+                tw.Write("</div>"); // id='tab-builder'
+
+                // Execution:
                 if (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase))
                 {
                     string query;
@@ -323,6 +352,7 @@ $(function() {
                     // Execute the query:
                     string errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
 
+                    tw.Write("<div id='tab-results'>");
                     if (query != null)
                     {
                         tw.Write("<div id='query'><h3>Query</h3><pre>{0}</pre></div>", HttpUtility.HtmlEncode(query));
@@ -335,7 +365,7 @@ $(function() {
                     }
 
                     // Output table:
-                    tw.Write("<div id='resultsView'><h3>Results</h3><div id='resultsInner'><strong>Execution time:</strong>&nbsp;{0:N0} ms", execTimeMsec);
+                    tw.Write("<div id='resultsView'><h3>Results</h3><div id='resultsInner'><strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
                     tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
 
                     int rowNumber = 1;
@@ -352,10 +382,10 @@ $(function() {
                             }
                             tw.Write("</tr></thead>\n<tbody>");
                         }
-                        
+
                         tw.Write("<tr>");
                         tw.Write("<td class='rn'>{0}</td>", rowNumber++);
-                        
+
                         foreach (object col in row)
                         {
                             string tdclass = null;
@@ -375,7 +405,7 @@ $(function() {
                                     // Display byte[] as 0xHEXCHARS:
                                     byte[] bytes = (byte[])col;
                                     const string hexChars = "0123456789ABCDEF";
-                                    
+
                                     StringBuilder sbhex = new StringBuilder(2 + 2 * bytes.Length);
                                     sbhex.Append("0x");
                                     for (int j = 0; j < bytes.Length; ++j)
@@ -400,10 +430,14 @@ $(function() {
                         tw.Write("</tr>\n");
                     } // foreach (IEnumerable<object> row in rows)
                     tw.Write("</tbody>\n</table></div></div>");
+
+                end:
+                    tw.Write("</div>"); // id='tab-results'
                 }
 
                 // End:
-            end:
+                tw.Write("</div>"); // id='tabs'
+                tw.Write("</form></div>");
                 tw.Write("</body></html>");
             }
             catch (Exception ex)
@@ -554,7 +588,7 @@ $(function() {
                 header[i] = new string[2] { dr.GetName(i), formatSQLtype(dr, i) };
             }
 #else
-            header = new string[fieldCount,2];
+            header = new string[fieldCount, 2];
             for (int i = 0; i < fieldCount; ++i)
             {
                 header[i, 0] = dr.GetName(i);
@@ -775,7 +809,7 @@ $(function() {
                         ++i;
                         while (i < s.Length)
                         {
-                            if ((i < s.Length - 1) && (s[i] == '"') && (s[i+1] == '"'))
+                            if ((i < s.Length - 1) && (s[i] == '"') && (s[i + 1] == '"'))
                             {
                                 i += 2;
                             }
