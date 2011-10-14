@@ -253,32 +253,41 @@ $(function() {
     $('#btnHAVING') .click(function() { $('#rowHAVING').toggle(); return false; });
     $('#btnORDERBY').click(function() { $('#rowORDERBY').toggle(); return false; });
 
-    // Enable buttons:
-    $('input:submit, a, button').button();
-
     // Enable the tabbed view:
     $('#tabs').tabs();
     $('#tabs').tabs('select', " + (actionExecute ? "1" : "0") + @");
 
+    // Enable buttons:
+    $('input:submit, a, button').button();
+
+    var coltypeVisible = true;
     $('#toggleColumnTypeHeaders').click(function() {
         // Toggle the visibility of the coltype header cells:
-        $('th.coltype').each(function() {
-            if ($(this).is(':visible')) {
-                $(this).hide();
-                $(this).prev().attr('colspan', 2);
-            } else {
-                $(this).show();
-                $(this).prev().removeAttr('colspan');
-            }
-        });
+        if (coltypeVisible)
+        {
+            $('th.coltype').hide().prev().attr('colspan', 2);
+            $(this).button('option', 'label', 'Show Types');
+            coltypeVisible = false;
+        }
+        else
+        {
+            $('th.coltype').show().prev().removeAttr('colspan');
+            $(this).button('option', 'label', 'Hide Types');
+            coltypeVisible = true;
+        }
         return false;
     });
 });
 //-->
 </script>");
 
+                tw.Write(@"<style>
+.ui-widget .ui-widget {
+  font-size: 0.75em;
+}
+</style>");
                 // Start the <body> section:
-                tw.Write("</head><body bgcolor=#ffffff text=#222222 link=#1122cc vlink=#6611cc alink=#d14836>");
+                tw.Write("</head><body bgcolor='#ffffff' text='#222222' link='#1122cc' vlink='#6611cc' alink='#d14836'>");
 
                 // Create a UriBuilder based on the current request Uri that overrides the query-string:
                 UriBuilder execUri = new UriBuilder(req.Url);
@@ -380,7 +389,7 @@ $(function() {
 
                     // Output table:
                     tw.Write("<div id='resultsView'>");
-                    tw.Write("<button id='toggleColumnTypeHeaders'>Show Column Types</button><br/>");
+                    tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
                     tw.Write("<h3>Results</h3><div id='resultsInner'>");
                     tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
                     tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
@@ -405,6 +414,7 @@ $(function() {
 
                         foreach (object col in row)
                         {
+                            bool isNobr = false;
                             string tdclass = null;
                             string colvalue;
                             if ((col == null) || (col == DBNull.Value))
@@ -435,13 +445,22 @@ $(function() {
                                 }
                                 else
                                 {
+                                    if (ctype == typeof(DateTime))
+                                        isNobr = true;
+                                    else if (ctype == typeof(DateTimeOffset))
+                                        isNobr = true;
+
                                     // All else, use TypeConverter.ConvertToString:
                                     var tc = System.ComponentModel.TypeDescriptor.GetConverter(ctype);
                                     colvalue = tc.ConvertToString(col);
+
+                                    // Use a <nobr> around short-enough columns that include word-breaking chars.
+                                    if ((colvalue.Length <= 40) && !(colvalue.IndexOfAny(new char[] { '\r', '\n' }) >= 0))
+                                        isNobr = true;
                                 }
                             }
 
-                            tw.Write("<td colspan='2'{1}>{0}</td>", HttpUtility.HtmlEncode(colvalue), tdclass == null ? String.Empty : " class='" + tdclass + "'");
+                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", HttpUtility.HtmlEncode(colvalue), tdclass == null ? String.Empty : " class='" + tdclass + "'", isNobr ? "<nobr>" : String.Empty, isNobr ? "</nobr>" : String.Empty);
                         } // foreach (object col in row)
 
                         tw.Write("</tr>\n");
