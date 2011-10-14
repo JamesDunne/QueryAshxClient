@@ -396,7 +396,8 @@ $(function() {
                             System.IO.Path.Combine(ctx.Server.MapPath("~/"), @"query.ashx.log"),
                             String.Concat(
                                 encodeTabDelimited(DateTimeOffset.Now.ToString()), "\t",
-                                encodeTabDelimited(query),
+                                encodeTabDelimited(query), "\t",
+                                encodeTabDelimited(execURL),
                                 Environment.NewLine
                             ),
                             Encoding.UTF8
