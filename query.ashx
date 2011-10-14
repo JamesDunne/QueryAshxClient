@@ -11,7 +11,6 @@
 // This file was sourced from gist.github.com/1286172
 
 // TODO: log all queries to a rolling text file using tab-delimited records; gzip any logs with datestamps older than today.
-// TODO: make 'link' action to convert FORM post into URL with query-string
 
 // This changes depending on if attached to a debugger, apparently.
 //#define DEBUG
@@ -205,16 +204,16 @@ th.coltype
                 string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
 
                 // Pull FORM values:
-                csname = req.Form["csname"];
-                cs = req.Form["cs"];
-                withCTEidentifier = req.Form["withCTEidentifier"];
-                withCTEexpression = req.Form["withCTEexpression"];
-                select = req.Form["select"];
-                from = req.Form["from"];
-                where = req.Form["where"];
-                groupBy = req.Form["groupBy"];
-                having = req.Form["having"];
-                orderBy = req.Form["orderBy"];
+                csname = getFormOrQueryValue("csname");
+                cs = getFormOrQueryValue("cs");
+                withCTEidentifier = getFormOrQueryValue("withCTEidentifier");
+                withCTEexpression = getFormOrQueryValue("withCTEexpression");
+                select = getFormOrQueryValue("select");
+                from = getFormOrQueryValue("from");
+                where = getFormOrQueryValue("where");
+                groupBy = getFormOrQueryValue("groupBy");
+                having = getFormOrQueryValue("having");
+                orderBy = getFormOrQueryValue("orderBy");
 
                 // Dynamically show/hide the rows depending on which FORM values we have provided:
                 tw.Write("<style type=\"text/css\">");
@@ -253,6 +252,15 @@ $(function() {
                 // Start the <body> section:
                 tw.Write("</head><body bgcolor=#ffffff text=#222222 link=#1122cc vlink=#6611cc alink=#d14836>");
 
+                // Create a UriBuilder based on the current request Uri that overrides the query-string:
+                UriBuilder execUri = new UriBuilder(req.Url);
+                execUri.Query = String.Join("&",
+                    req.Form.AllKeys.Union(req.QueryString.AllKeys)
+                    .Select(k => HttpUtility.UrlEncode(k) + "=" + HttpUtility.UrlEncode(getFormOrQueryValue(k)))
+                    .ToArray()
+                );
+                string execURL = execUri.Uri.ToString();
+                
                 // Query builder form:
                 tw.Write("<div><form method=\"post\">");
                 tw.Write("<div><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
@@ -281,11 +289,13 @@ $(function() {
                 tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
                 tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
                 tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
+                // Create a link to share this query with:
+                tw.Write("<a href=\"{0}\">link</a>", execURL);
                 tw.Write("</td></tr>");
                 tw.Write("</tbody></table></div>");
                 tw.Write("</form></div>");
 
-                if (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
+                if (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase))
                 {
                     string query;
                     string[,] header;
@@ -367,10 +377,10 @@ $(function() {
                             }
 
                             tw.Write("<td colspan='2'{1}>{0}</td>", HttpUtility.HtmlEncode(colvalue), tdclass == null ? String.Empty : " class='" + tdclass + "'");
-                        } // for (int i = 0; i < row.Length; ++i)
+                        } // foreach (object col in row)
 
                         tw.Write("</tr>\n");
-                    } // foreach (object[] row in rows)
+                    } // foreach (IEnumerable<object> row in rows)
                     tw.Write("</tbody>\n</table></div></div>");
                 }
 
@@ -388,6 +398,11 @@ $(function() {
         }
 
         public bool IsReusable { get { return false; } }
+
+        private string getFormOrQueryValue(string name)
+        {
+            return ctx.Request.Form[name] ?? ctx.Request.QueryString[name];
+        }
 
         public string QuerySQL(
             [QueryParameter("Named connection string")]             string csname,
