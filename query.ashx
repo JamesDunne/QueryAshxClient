@@ -148,6 +148,11 @@ div#resultsView
 div#resultsInner
 {
 	margin-left: 1em;
+}
+
+div#resultsTableDiv
+{
+    clear: left;
     max-width: 1280;
     max-height: 30em;
     overflow-x: auto;
@@ -411,9 +416,15 @@ $(function() {
 
                     // Output table:
                     tw.Write("<div id='resultsView'>");
-                    tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
-                    tw.Write("<h3>Results</h3><div id='resultsInner'>");
+                    tw.Write("<h3>Results</h3>");
+                    tw.Write("<div id='resultsInner'>");
+                    tw.Write("<div style='float: left;'>");
                     tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
+                    tw.Write("</div>");
+                    tw.Write("<div style='float: right;'>");
+                    tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
+                    tw.Write("</div>");
+                    tw.Write("<div id='resultsTableDiv'>");
                     tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
 
                     int rowNumber = 1;
@@ -487,7 +498,9 @@ $(function() {
 
                         tw.Write("</tr>\n");
                     } // foreach (IEnumerable<object> row in rows)
-                    tw.Write("</tbody>\n</table></div></div>");
+                    tw.Write("</tbody>\n</table>");
+                    tw.Write("</div>"); // id='resultsTableDiv'
+                    tw.Write("</div></div>");
 
                 end:
                     tw.Write("</div>"); // id='tab-results'
