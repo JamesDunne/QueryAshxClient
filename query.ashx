@@ -885,16 +885,29 @@ $(function() {
 
             int rec = 0;
             int i = 0;
+            int pdepth = 0;
+
             while (i < s.Length)
             {
+                // Allow letters and underscores to pass for keywords:
+                if (Char.IsLetter(s[i]) || s[i] == '_')
+                {
+                    if (rec == -1) rec = i;
+
+                    ++i;
+                    continue;
+                }
+
+                // Check last keyword only if at depth 0 of nested parens (this allows subqueries):
+                if ((rec != -1) && (pdepth == 0))
+                {
+                    if (keywords.Contains(s.Substring(rec, i - rec), StringComparer.OrdinalIgnoreCase))
+                        return true;
+                }
+
                 if (s[i] == '\'')
                 {
-                    // Check last keyword:
-                    if (rec != -1)
-                    {
-                        if (keywords.Contains(s.Substring(rec, i - rec), StringComparer.OrdinalIgnoreCase))
-                            return true;
-                    }
+                    // Process strings.
 
                     ++i;
                     while (i < s.Length)
@@ -916,16 +929,11 @@ $(function() {
                 }
                 else if ((s[i] == '[') || (s[i] == '"'))
                 {
-                    // Check last keyword:
-                    if (rec != -1)
-                    {
-                        if (keywords.Contains(s.Substring(rec, i - rec), StringComparer.OrdinalIgnoreCase))
-                            return true;
-                    }
-                    rec = -1;
+                    // Process quoted identifiers.
 
                     if (s[i] == '[')
                     {
+                        // Bracket quoted identifier.
                         ++i;
                         while (i < s.Length)
                         {
@@ -939,6 +947,7 @@ $(function() {
                     }
                     else if (s[i] == '"')
                     {
+                        // Double-quoted identifier. Note that these are not strings.
                         ++i;
                         while (i < s.Length)
                         {
@@ -954,21 +963,31 @@ $(function() {
                             else ++i;
                         }
                     }
-                }
-                else if (s[i] == ' ' || s[i] == '(' || s[i] == ')' || s[i] == '.' || s[i] == ',' || s[i] == '\r' || s[i] == '\n')
-                {
-                    // Check last keyword:
-                    if (rec != -1)
-                    {
-                        if (keywords.Contains(s.Substring(rec, i - rec), StringComparer.OrdinalIgnoreCase))
-                            return true;
-                    }
+
                     rec = -1;
+                }
+                else if (s[i] == ' ' || s[i] == '.' || s[i] == ',' || s[i] == '\r' || s[i] == '\n')
+                {
+                    rec = -1;
+
                     ++i;
                 }
-                else if (Char.IsLetter(s[i]) || s[i] == '_')
+                else if (s[i] == '(')
                 {
-                    if (rec == -1) rec = i;
+                    rec = -1;
+
+                    ++pdepth;
+                    ++i;
+                }
+                else if (s[i] == ')')
+                {
+                    rec = -1;
+
+                    --pdepth;
+                    if (pdepth < 0)
+                    {
+                        throw new Exception("Too many closing parentheses encountered");
+                    }
                     ++i;
                 }
                 else
@@ -983,6 +1002,12 @@ $(function() {
                     rec = -1;
                     ++i;
                 }
+            }
+
+            // We must be at paren depth 0 here:
+            if (pdepth > 0)
+            {
+                throw new Exception(String.Format("{0} {1} left unclosed", pdepth, pdepth == 1 ? "parenthesis" : "parentheses"));
             }
 
             if (rec != -1)
