@@ -192,7 +192,7 @@ td.rn
 td.nullvalue
 {
     font-weight: bold;
-    background-color: #880;
+    background-color: #AA6;
 }
 
 th.coltype
@@ -379,7 +379,19 @@ $(function() {
                     long execTimeMsec;
 
                     // Execute the query:
-                    string errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
+                    string errMessage;
+                    try
+                    {
+                        errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
+                    }
+                    catch (Exception ex)
+                    {
+                        errMessage = ex.Message;
+                        query = null;
+                        execTimeMsec = 0;
+                        rows = null;
+                        header = null;
+                    }
 
                     tw.Write("<div id='tab-results'>");
                     if (query != null)
@@ -445,10 +457,22 @@ $(function() {
                         tw.Write("<tr>");
                         tw.Write("<td class='rn'>{0}</td>", rowNumber++);
 
-                        foreach (object col in row)
+                        using (var rowen = row.GetEnumerator())
+                        for (int colnum = 0; rowen.MoveNext(); ++colnum)
                         {
+                            object col = rowen.Current;
+
+                            string align = null;
                             bool isNobr = false;
                             string tdclass = null;
+
+                            // Use the SQL type to determine column alignment:
+                            string sqltype = header[colnum, 1];
+                            if (sqltype == "int" || sqltype == "decimal" || sqltype == "double")
+                                align = "right";
+                            else if (sqltype == "datetime" || sqltype == "datetimeoffset" || sqltype == "datetime2")
+                                isNobr = true;
+
                             string colvalue;
                             if ((col == null) || (col == DBNull.Value))
                             {
@@ -478,22 +502,26 @@ $(function() {
                                 }
                                 else
                                 {
-                                    if (ctype == typeof(DateTime))
-                                        isNobr = true;
-                                    else if (ctype == typeof(DateTimeOffset))
-                                        isNobr = true;
-
                                     // All else, use TypeConverter.ConvertToString:
                                     var tc = System.ComponentModel.TypeDescriptor.GetConverter(ctype);
                                     colvalue = tc.ConvertToString(col);
 
                                     // Use a <nobr> around short-enough columns that include word-breaking chars.
-                                    if ((colvalue.Length <= 40) && !(colvalue.IndexOfAny(new char[] { '\r', '\n' }) >= 0))
+                                    if ((colvalue.Length <= 60) && !(colvalue.IndexOfAny(new char[] { '\r', '\n' }) >= 0))
                                         isNobr = true;
                                 }
                             }
 
-                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", HttpUtility.HtmlEncode(colvalue), tdclass == null ? String.Empty : " class='" + tdclass + "'", isNobr ? "<nobr>" : String.Empty, isNobr ? "</nobr>" : String.Empty);
+                            string attrs = String.Empty;
+                            if (tdclass != null) attrs += " class='" + tdclass + "'";
+                            if (align != null) attrs += " style='text-align: " + align + ";'";
+
+                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>",
+                                HttpUtility.HtmlEncode(colvalue),
+                                attrs,
+                                isNobr ? "<nobr>" : String.Empty,
+                                isNobr ? "</nobr>" : String.Empty
+                            );
                         } // foreach (object col in row)
 
                         tw.Write("</tr>\n");
