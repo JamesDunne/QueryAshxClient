@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web;
+using System.Xml.Serialization;
 
 namespace AdHocQuery
 {
@@ -44,14 +45,39 @@ namespace AdHocQuery
 
             try
             {
-                rsp.StatusCode = 200;
+                if (String.Equals(getFormOrQueryValue("output"), "json", StringComparison.OrdinalIgnoreCase))
+                {
+                    renderJSON(req, rsp);
+                }
+                else if (String.Equals(getFormOrQueryValue("output"), "xml", StringComparison.OrdinalIgnoreCase))
+                {
+                    renderXML(req, rsp);
+                }
+                else
+                {
+                    renderHTMLUI(req, rsp);
+                }
+            }
+            catch (Exception ex)
+            {
+                rsp.Clear();
+                rsp.StatusCode = 500;
                 rsp.ContentType = "text/html";
+                rsp.Write(ex.ToString());
+                return;
+            }
+        }
 
-                System.IO.TextWriter tw = rsp.Output;
+        private void renderHTMLUI(HttpRequest req, HttpResponse rsp)
+        {
+            rsp.StatusCode = 200;
+            rsp.ContentType = "text/html";
 
-                // Head:
-                tw.Write("<!doctype html><html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><title>SQL Query Builder</title>");
-                tw.Write(@"<style type=""text/css"">
+            System.IO.TextWriter tw = rsp.Output;
+
+            // Head:
+            tw.Write("<!doctype html><html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><title>SQL Query Builder</title>");
+            tw.Write(@"<style type=""text/css"">
 body
 {
     margin-top: 4px;
@@ -224,48 +250,48 @@ th.coltype
 }
 </style>");
 
-                string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
+            string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
 
-                // Pull FORM values:
-                csname = getFormOrQueryValue("csname");
-                cs = getFormOrQueryValue("cs");
-                withCTEidentifier = getFormOrQueryValue("wi");
-                withCTEexpression = getFormOrQueryValue("we");
-                select = getFormOrQueryValue("select");
-                from = getFormOrQueryValue("from");
-                where = getFormOrQueryValue("where");
-                groupBy = getFormOrQueryValue("groupBy");
-                having = getFormOrQueryValue("having");
-                orderBy = getFormOrQueryValue("orderBy");
+            // Pull FORM values:
+            csname = getFormOrQueryValue("csname");
+            cs = getFormOrQueryValue("cs");
+            withCTEidentifier = getFormOrQueryValue("wi");
+            withCTEexpression = getFormOrQueryValue("we");
+            select = getFormOrQueryValue("select");
+            from = getFormOrQueryValue("from");
+            where = getFormOrQueryValue("where");
+            groupBy = getFormOrQueryValue("groupBy");
+            having = getFormOrQueryValue("having");
+            orderBy = getFormOrQueryValue("orderBy");
 
-                bool actionExecute = (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase));
+            bool actionExecute = (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase));
 
-                // Dynamically show/hide the rows depending on which FORM values we have provided:
-                tw.Write("<style type=\"text/css\">");
+            // Dynamically show/hide the rows depending on which FORM values we have provided:
+            tw.Write("<style type=\"text/css\">");
 
-                bool displayWITH = !String.IsNullOrEmpty(withCTEidentifier) && !String.IsNullOrEmpty(withCTEexpression);
-                bool displayFROM = !String.IsNullOrEmpty(from);
-                bool displayWHERE = !String.IsNullOrEmpty(where);
-                bool displayGROUPBY = !String.IsNullOrEmpty(groupBy);
-                bool displayHAVING = !String.IsNullOrEmpty(having);
-                bool displayORDERBY = !String.IsNullOrEmpty(orderBy);
-                tw.Write("tr#rowWITH    {{ {0} }}", displayWITH ? String.Empty : "display: none;");
-                tw.Write("tr#rowFROM    {{ {0} }}", displayFROM ? String.Empty : "display: none;");
-                tw.Write("tr#rowWHERE   {{ {0} }}", displayWHERE ? String.Empty : "display: none;");
-                tw.Write("tr#rowGROUPBY {{ {0} }}", displayGROUPBY ? String.Empty : "display: none;");
-                tw.Write("tr#rowHAVING  {{ {0} }}", displayHAVING ? String.Empty : "display: none;");
-                tw.Write("tr#rowORDERBY {{ {0} }}", displayORDERBY ? String.Empty : "display: none;");
+            bool displayWITH = !String.IsNullOrEmpty(withCTEidentifier) && !String.IsNullOrEmpty(withCTEexpression);
+            bool displayFROM = !String.IsNullOrEmpty(from);
+            bool displayWHERE = !String.IsNullOrEmpty(where);
+            bool displayGROUPBY = !String.IsNullOrEmpty(groupBy);
+            bool displayHAVING = !String.IsNullOrEmpty(having);
+            bool displayORDERBY = !String.IsNullOrEmpty(orderBy);
+            tw.Write("tr#rowWITH    {{ {0} }}", displayWITH ? String.Empty : "display: none;");
+            tw.Write("tr#rowFROM    {{ {0} }}", displayFROM ? String.Empty : "display: none;");
+            tw.Write("tr#rowWHERE   {{ {0} }}", displayWHERE ? String.Empty : "display: none;");
+            tw.Write("tr#rowGROUPBY {{ {0} }}", displayGROUPBY ? String.Empty : "display: none;");
+            tw.Write("tr#rowHAVING  {{ {0} }}", displayHAVING ? String.Empty : "display: none;");
+            tw.Write("tr#rowORDERBY {{ {0} }}", displayORDERBY ? String.Empty : "display: none;");
 
-                tw.Write("</style>");
+            tw.Write("</style>");
 
-                // Import jQuery 1.6.2:
-                tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
-                // Import jQueryUI 1.8.5:
-                tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js""></script>");
-                tw.Write(@"<link rel=""stylesheet"" type=""text/css"" href=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/redmond/jquery-ui.css"" />");
+            // Import jQuery 1.6.2:
+            tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
+            // Import jQueryUI 1.8.5:
+            tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js""></script>");
+            tw.Write(@"<link rel=""stylesheet"" type=""text/css"" href=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/redmond/jquery-ui.css"" />");
 
-                // Now write out the javascript to allow toggling of show/hide per each query builder row:
-                tw.Write(@"<script type=""text/javascript""><!--
+            // Now write out the javascript to allow toggling of show/hide per each query builder row:
+            tw.Write(@"<script type=""text/javascript""><!--
 $(function() {
     $('#btnWITH')   .click(function() { $('#rowWITH').toggle(); return false; });
     $('#btnFROM')   .click(function() { $('#rowFROM').toggle(); return false; });
@@ -302,177 +328,172 @@ $(function() {
 //-->
 </script>");
 
-                tw.Write(@"<style>
+            tw.Write(@"<style>
 .ui-widget .ui-widget {
   font-size: 0.75em;
 }
 </style>");
-                // Start the <body> section:
-                tw.Write("</head><body bgcolor='#ffffff' text='#222222' link='#1122cc' vlink='#6611cc' alink='#d14836'>");
+            // Start the <body> section:
+            tw.Write("</head><body bgcolor='#ffffff' text='#222222' link='#1122cc' vlink='#6611cc' alink='#d14836'>");
 
-                // Create a UriBuilder based on the current request Uri that overrides the query-string:
-                UriBuilder execUri = new UriBuilder(req.Url);
-                execUri.Query = String.Join("&",
-                    req.Form.AllKeys.Union(req.QueryString.AllKeys)
-                    .Select(k => HttpUtility.UrlEncode(k) + "=" + HttpUtility.UrlEncode(getFormOrQueryValue(k)))
-                    .ToArray()
-                );
-                string execURL = execUri.Uri.ToString();
+            // Create a UriBuilder based on the current request Uri that overrides the query-string:
+            UriBuilder execUri = new UriBuilder(req.Url);
+            execUri.Query = String.Join("&",
+                req.Form.AllKeys.Union(req.QueryString.AllKeys)
+                .Select(k => HttpUtility.UrlEncode(k) + "=" + HttpUtility.UrlEncode(getFormOrQueryValue(k)))
+                .ToArray()
+            );
+            string execURL = execUri.Uri.ToString();
 
-                // Create the main form wrapper:
-                tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
+            UriBuilder jsonUri = new UriBuilder(execUri.Uri);
+            jsonUri.Query = jsonUri.Query + "&output=json";
+            string jsonURL = jsonUri.Uri.ToString();
 
-                // Tabs container:
-                tw.Write("<div id='tabs'>");
-                tw.Write("<ul>");
-                tw.Write("<li><a href='#tab-builder'>Query Builder</a></li>");
-                if (actionExecute)
-                    tw.Write("<li><a href='#tab-results'>Results</a></li>");
-                tw.Write("</ul>");
+            UriBuilder xmlUri = new UriBuilder(execUri.Uri);
+            xmlUri.Query = xmlUri.Query + "&output=xml";
+            string xmlURL = xmlUri.Uri.ToString();
 
+            // Create the main form wrapper:
+            tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
 
-                // Query-builder tab:
-                tw.Write("<div id='tab-builder'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
-                tw.Write("<tr><td>&nbsp;</td><td>");
-                tw.Write("<button id='btnWITH'    >WITH</button>");
-                tw.Write("<button id='btnSELECT' disabled='disabled' >SELECT</button>");
-                tw.Write("<button id='btnFROM'    >FROM</button>");
-                tw.Write("<button id='btnWHERE'   >WHERE</button>");
-                tw.Write("<button id='btnGROUPBY' >GROUP BY</button>");
-                tw.Write("<button id='btnHAVING'  >HAVING</button>");
-                tw.Write("<button id='btnORDERBY' >ORDER BY</button>");
-                tw.Write("</td></tr>");
-                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
-                    HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
-                    HttpUtility.HtmlEncode(withCTEexpression),
-                    (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
-                );
-                tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
-                // Create a link to share this query with:
-                tw.Write("<a href=\"{0}\">link</a>", execURL);
-                tw.Write("</td></tr>");
-                tw.Write("</tbody></table>");
+            // Tabs container:
+            tw.Write("<div id='tabs'>");
+            tw.Write("<ul>");
+            tw.Write("<li><a href='#tab-builder'>Query Builder</a></li>");
+            if (actionExecute)
+                tw.Write("<li><a href='#tab-results'>Results</a></li>");
+            tw.Write("</ul>");
 
 
-                // Connection Manager:
-                tw.Write("<div id='connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
+            // Query-builder tab:
+            tw.Write("<div id='tab-builder'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
+            tw.Write("<tr><td>&nbsp;</td><td>");
+            tw.Write("<button id='btnWITH'    >WITH</button>");
+            tw.Write("<button id='btnSELECT' disabled='disabled' >SELECT</button>");
+            tw.Write("<button id='btnFROM'    >FROM</button>");
+            tw.Write("<button id='btnWHERE'   >WHERE</button>");
+            tw.Write("<button id='btnGROUPBY' >GROUP BY</button>");
+            tw.Write("<button id='btnHAVING'  >HAVING</button>");
+            tw.Write("<button id='btnORDERBY' >ORDER BY</button>");
+            tw.Write("</td></tr>");
+            tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
+                HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
+                HttpUtility.HtmlEncode(withCTEexpression),
+                (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
+            );
+            tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
+            tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
+            tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
+            tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
+            tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
+            tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
+            tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
+            // Create a link to share this query with:
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank'>link</a>", execURL);
+            // Create a link to produce JSON output:
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank'>JSON</a>", jsonURL);
+            // Create a link to produce XML output:
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank'>XML</a>", xmlURL);
+            tw.Write("</td></tr>");
+            tw.Write("</tbody></table>");
+
+
+            // Connection Manager:
+            tw.Write("<div id='connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
 #if true
-                // Drop-down for named connection strings:
-                tw.Write("<tr><td>Named connection string:</td><td><select name='csname'>");
-                tw.Write("<option value=''{0}>-- Use custom connection string --</option>", String.Equals(csname ?? "", "", StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty);
-                foreach (System.Configuration.ConnectionStringSettings css in System.Configuration.ConfigurationManager.ConnectionStrings)
-                {
-                    tw.Write("<option value='{0}'{3}>[{1}] -- {2}</option>",
-                        HttpUtility.HtmlAttributeEncode(css.Name),
-                        HttpUtility.HtmlEncode(css.Name),
-                        HttpUtility.HtmlEncode(css.ConnectionString),
-                        String.Equals(csname, css.Name, StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty
-                    );
-                }
-                tw.Write("</select></td></tr>");
+            // Drop-down for named connection strings:
+            tw.Write("<tr><td>Named connection string:</td><td><select name='csname'>");
+            tw.Write("<option value=''{0}>-- Use custom connection string --</option>", String.Equals(csname ?? "", "", StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty);
+            foreach (System.Configuration.ConnectionStringSettings css in System.Configuration.ConfigurationManager.ConnectionStrings)
+            {
+                tw.Write("<option value='{0}'{3}>[{1}] -- {2}</option>",
+                    HttpUtility.HtmlAttributeEncode(css.Name),
+                    HttpUtility.HtmlEncode(css.Name),
+                    HttpUtility.HtmlEncode(css.ConnectionString),
+                    String.Equals(csname, css.Name, StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty
+                );
+            }
+            tw.Write("</select></td></tr>");
 #else
-                tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
+            tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
 #endif
-                tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
-                tw.Write("</tbody></table></div>");
+            tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
+            tw.Write("</tbody></table></div>");
 
 
-                tw.Write("</div>"); // id='tab-builder'
+            tw.Write("</div>"); // id='tab-builder'
 
-                // Execution:
-                if (actionExecute)
+            // Execution:
+            if (actionExecute)
+            {
+                string query;
+                string[,] header;
+                IEnumerable<IEnumerable<object>> rows;
+                long execTimeMsec;
+
+                // Execute the query:
+                string errMessage;
+                try
                 {
-                    string query;
-                    string[,] header;
-                    IEnumerable<IEnumerable<object>> rows;
-                    long execTimeMsec;
+                    errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
+                }
+                catch (Exception ex)
+                {
+                    errMessage = ex.Message;
+                    query = null;
+                    execTimeMsec = 0;
+                    rows = null;
+                    header = null;
+                }
 
-                    // Execute the query:
-                    string errMessage;
-                    try
-                    {
-                        errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
-                    }
-                    catch (Exception ex)
-                    {
-                        errMessage = ex.Message;
-                        query = null;
-                        execTimeMsec = 0;
-                        rows = null;
-                        header = null;
-                    }
+                tw.Write("<div id='tab-results'>");
+                if (query != null)
+                {
+                    tw.Write("<div id='query'><h3>Query</h3><pre>{0}</pre></div>", HttpUtility.HtmlEncode(query));
+                }
 
-                    tw.Write("<div id='tab-results'>");
-                    if (query != null)
-                    {
-                        tw.Write("<div id='query'><h3>Query</h3><pre>{0}</pre></div>", HttpUtility.HtmlEncode(query));
-                    }
+                if (errMessage != null)
+                {
+                    tw.Write("<div id='resultsView'><h3>Error</h3><div id='resultsInner'><span class='exception'>{0}</span></div></div>", HttpUtility.HtmlEncode(errMessage));
+                    goto end;
+                }
 
-                    if (errMessage != null)
-                    {
-                        tw.Write("<div id='resultsView'><h3>Error</h3><div id='resultsInner'><span class='exception'>{0}</span></div></div>", HttpUtility.HtmlEncode(errMessage));
-                        goto end;
-                    }
+                logQuery(query, execURL);
 
-#if LogQueries
-                    try
-                    {
-                        // Log query to a rolling log file:
-                        System.IO.File.AppendAllText(
-                            System.IO.Path.Combine(ctx.Server.MapPath("~/"), @"query.ashx.log"),
-                            String.Concat(
-                                encodeTabDelimited(DateTimeOffset.Now.ToString()), "\t",
-                                encodeTabDelimited(query), "\t",
-                                encodeTabDelimited(execURL),
-                                Environment.NewLine
-                            ),
-                            Encoding.UTF8
-                        );
-                    }
-                    catch
-                    {
-                        // Not much to do here. Don't really care to warn the user if it fails.
-                    }
-#endif
+                // Output table:
+                tw.Write("<div id='resultsView'>");
+                tw.Write("<h3>Results</h3>");
+                tw.Write("<div id='resultsInner'>");
+                tw.Write("<div style='float: left;'>");
+                tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
+                tw.Write("</div>");
+                tw.Write("<div style='float: right;'>");
+                tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
+                tw.Write("</div>");
 
-                    // Output table:
-                    tw.Write("<div id='resultsView'>");
-                    tw.Write("<h3>Results</h3>");
-                    tw.Write("<div id='resultsInner'>");
-                    tw.Write("<div style='float: left;'>");
-                    tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
-                    tw.Write("</div>");
-                    tw.Write("<div style='float: right;'>");
-                    tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
-                    tw.Write("</div>");
-                    tw.Write("<div id='resultsTableDiv'>");
-                    tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
+                // TABLE output:
+                tw.Write("<div id='resultsTableDiv'>");
+                tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
 
-                    int rowNumber = 1;
-                    foreach (IEnumerable<object> row in rows)
+                int rowNumber = 1;
+                foreach (IEnumerable<object> row in rows)
+                {
+                    if ((rowNumber - 1) % 10 == 0)
                     {
-                        if ((rowNumber - 1) % 10 == 0)
+                        // Write header:
+                        if (rowNumber > 1) tw.Write("</tbody>\n");
+                        tw.Write("<thead><tr><th>Row</th>");
+                        for (int h = 0; h <= header.GetUpperBound(0); ++h)
                         {
-                            // Write header:
-                            if (rowNumber > 1) tw.Write("</tbody>\n");
-                            tw.Write("<thead><tr><th>Row</th>");
-                            for (int h = 0; h <= header.GetUpperBound(0); ++h)
-                            {
-                                tw.Write("<th class='colname'>{0}</th><th class='coltype'>{1}</th>", HttpUtility.HtmlEncode(header[h, 0]), HttpUtility.HtmlEncode(header[h, 1]));
-                            }
-                            tw.Write("</tr></thead>\n<tbody>");
+                            tw.Write("<th class='colname'>{0}</th><th class='coltype'>{1}</th>", HttpUtility.HtmlEncode(header[h, 0]), HttpUtility.HtmlEncode(header[h, 1]));
                         }
+                        tw.Write("</tr></thead>\n<tbody>");
+                    }
 
-                        tw.Write("<tr>");
-                        tw.Write("<td class='rn'>{0}</td>", rowNumber++);
+                    tw.Write("<tr>");
+                    tw.Write("<td class='rn'>{0}</td>", rowNumber++);
 
-                        using (var rowen = row.GetEnumerator())
+                    using (var rowen = row.GetEnumerator())
                         for (int colnum = 0; rowen.MoveNext(); ++colnum)
                         {
                             object col = rowen.Current;
@@ -503,16 +524,7 @@ $(function() {
                                 {
                                     // Display byte[] as 0xHEXCHARS:
                                     byte[] bytes = (byte[])col;
-                                    const string hexChars = "0123456789ABCDEF";
-
-                                    StringBuilder sbhex = new StringBuilder(2 + 2 * bytes.Length);
-                                    sbhex.Append("0x");
-                                    for (int j = 0; j < bytes.Length; ++j)
-                                    {
-                                        sbhex.Append(hexChars[bytes[j] >> 4]);
-                                        sbhex.Append(hexChars[bytes[j] & 0xF]);
-                                    }
-                                    colvalue = sbhex.ToString();
+                                    colvalue = toHexString(bytes);
                                     tdclass = "hexvalue";
                                 }
                                 else
@@ -539,27 +551,296 @@ $(function() {
                             tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", HttpUtility.HtmlEncode(colvalue), attrs, wrapperElementStart, wrapperElementEnd);
                         } // foreach (object col in row)
 
-                        tw.Write("</tr>\n");
-                    } // foreach (IEnumerable<object> row in rows)
-                    tw.Write("</tbody>\n</table>");
-                    tw.Write("</div>"); // id='resultsTableDiv'
-                    tw.Write("</div></div>");
+                    tw.Write("</tr>\n");
+                } // foreach (IEnumerable<object> row in rows)
+                tw.Write("</tbody>\n</table>");
+                tw.Write("</div>"); // id='resultsTableDiv'
+                tw.Write("</div></div>");
 
-                end:
-                    tw.Write("</div>"); // id='tab-results'
-                }
+            end:
+                tw.Write("</div>"); // id='tab-results'
+            }
 
-                // End:
-                tw.Write("</div>"); // id='tabs'
-                tw.Write("</form></div>");
-                tw.Write("</body></html>");
+            // End:
+            tw.Write("</div>"); // id='tabs'
+            tw.Write("</form></div>");
+            tw.Write("</body></html>");
+        }
+
+        private static string toHexString(byte[] bytes)
+        {
+            const string hexChars = "0123456789ABCDEF";
+
+            StringBuilder sbhex = new StringBuilder(2 + 2 * bytes.Length);
+            sbhex.Append("0x");
+            for (int j = 0; j < bytes.Length; ++j)
+            {
+                sbhex.Append(hexChars[bytes[j] >> 4]);
+                sbhex.Append(hexChars[bytes[j] & 0xF]);
+            }
+            return sbhex.ToString();
+        }
+
+        private void renderJSON(HttpRequest req, HttpResponse rsp)
+        {
+            System.IO.TextWriter tw = rsp.Output;
+
+            string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
+
+            // Pull FORM values:
+            csname = getFormOrQueryValue("csname");
+            cs = getFormOrQueryValue("cs");
+            withCTEidentifier = getFormOrQueryValue("wi");
+            withCTEexpression = getFormOrQueryValue("we");
+            select = getFormOrQueryValue("select");
+            from = getFormOrQueryValue("from");
+            where = getFormOrQueryValue("where");
+            groupBy = getFormOrQueryValue("groupBy");
+            having = getFormOrQueryValue("having");
+            orderBy = getFormOrQueryValue("orderBy");
+
+            string query;
+            string[,] header;
+            IEnumerable<IEnumerable<object>> rows;
+            long execTimeMsec;
+
+            // Execute the query:
+            string errMessage;
+            try
+            {
+                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
             }
             catch (Exception ex)
             {
-                rsp.StatusCode = 500;
-                rsp.ContentType = "text/html";
-                rsp.Write(ex.ToString());
+                errMessage = ex.Message;
+                query = null;
+                execTimeMsec = 0;
+                rows = null;
+                header = null;
+            }
+
+            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+
+            if (errMessage != null)
+            {
+                tw.Write(jss.Serialize(new { query, error = errMessage }));
                 return;
+            }
+
+            // Convert the header string[,] to { name, type }[]:
+            List<object> headers = new List<object>(header.GetUpperBound(0) + 1);
+            string[] uniqname = new string[header.GetUpperBound(0) + 1];
+            HashSet<string> namesSet = new HashSet<string>();
+
+            for (int i = 0; i <= header.GetUpperBound(0); ++i)
+            {
+                headers.Add(new { name = header[i, 0], type = header[i, 1], ordinal = i });
+
+                // Generate a unique name for this column:
+                string name = header[i, 0];
+                int ctr = 0;
+                while (namesSet.Contains(name)) name = header[i, 0] + "_" + (ctr++).ToString();
+
+                namesSet.Add(name);
+                uniqname[i] = name;
+            }
+
+            // Convert each result row:
+            var results = new List<Dictionary<string, object>>();
+            foreach (IEnumerable<object> row in rows)
+            {
+                var result = new Dictionary<string, object>();
+
+                using (var rowen = row.GetEnumerator())
+                    for (int i = 0; rowen.MoveNext(); ++i)
+                    {
+                        object col = rowen.Current;
+                        // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
+
+                        result.Add(uniqname[i], col);
+                    }
+
+                results.Add(result);
+            }
+
+            rsp.StatusCode = 200;
+            rsp.ContentType = "application/json";
+            rsp.ContentEncoding = Encoding.UTF8;
+
+            // JSON serialize the output:
+            tw.Write(jss.Serialize(new
+            {
+                connection_string = cs,
+                connection_string_name = csname,
+                query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
+                query,
+                time = execTimeMsec,
+                header = headers,
+                results
+            }));
+        }
+
+        private void renderXML(HttpRequest req, HttpResponse rsp)
+        {
+            System.IO.TextWriter tw = rsp.Output;
+
+            string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
+
+            // Pull FORM values:
+            csname = getFormOrQueryValue("csname");
+            cs = getFormOrQueryValue("cs");
+            withCTEidentifier = getFormOrQueryValue("wi");
+            withCTEexpression = getFormOrQueryValue("we");
+            select = getFormOrQueryValue("select");
+            from = getFormOrQueryValue("from");
+            where = getFormOrQueryValue("where");
+            groupBy = getFormOrQueryValue("groupBy");
+            having = getFormOrQueryValue("having");
+            orderBy = getFormOrQueryValue("orderBy");
+
+            string query;
+            string[,] header;
+            IEnumerable<IEnumerable<object>> rows;
+            long execTimeMsec;
+
+            // Execute the query:
+            string errMessage;
+            try
+            {
+                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
+            }
+            catch (Exception ex)
+            {
+                errMessage = ex.Message;
+                query = null;
+                execTimeMsec = 0;
+                rows = null;
+                header = null;
+            }
+
+            rsp.StatusCode = 200;
+            rsp.ContentType = "application/xml";
+            rsp.ContentEncoding = Encoding.UTF8;
+            using (var xw = new System.Xml.XmlTextWriter(tw))
+            {
+                xw.WriteStartElement("root");
+
+                xw.WriteElementString("connection_string", cs);
+                xw.WriteElementString("connection_string_name", csname);
+
+                xw.WriteStartElement("query_parts");
+                xw.WriteElementString("wi", withCTEidentifier);
+                xw.WriteElementString("we", withCTEexpression);
+                xw.WriteElementString("select", select);
+                xw.WriteElementString("from", from);
+                xw.WriteElementString("where", where);
+                xw.WriteElementString("groupBy", groupBy);
+                xw.WriteElementString("having", having);
+                xw.WriteElementString("orderBy", orderBy);
+                xw.WriteEndElement(); // query_parts
+
+                xw.WriteElementString("query", query);
+
+                // Handle errors:
+                if (errMessage != null)
+                {
+                    xw.WriteElementString("error", errMessage);
+                    goto end;
+                }
+
+                xw.WriteElementString("time", execTimeMsec.ToString());
+
+                // Convert the header string[,] to { name, type }[]:
+                List<object> headers = new List<object>(header.GetUpperBound(0) + 1);
+                string[] uniqname = new string[header.GetUpperBound(0) + 1];
+                HashSet<string> namesSet = new HashSet<string>();
+
+                xw.WriteStartElement("header");
+                for (int i = 0; i <= header.GetUpperBound(0); ++i)
+                {
+                    headers.Add(new { name = header[i, 0], type = header[i, 1] });
+
+                    // Generate a unique name for this column:
+                    // TODO: make it an XML friendly name
+                    string name = header[i, 0];
+                    int ctr = 0;
+                    while (namesSet.Contains(name)) name = header[i, 0] + "_" + (ctr++).ToString();
+
+                    namesSet.Add(name);
+                    uniqname[i] = name;
+
+                    xw.WriteStartElement("column");
+                    xw.WriteAttributeString("name", name);
+                    xw.WriteAttributeString("type", header[i, 1]);
+                    xw.WriteAttributeString("ordinal", i.ToString());
+                    xw.WriteEndElement(); // column
+                }
+                xw.WriteEndElement(); // header
+
+                xw.WriteStartElement("results");
+                foreach (IEnumerable<object> row in rows)
+                {
+                    xw.WriteStartElement("row");
+                    using (var rowen = row.GetEnumerator())
+                        for (int i = 0; rowen.MoveNext(); ++i)
+                        {
+                            object col = rowen.Current;
+                            if (col == null)
+                            {
+                                // TODO: output xsi:nil="true"
+                                xw.WriteElementString(uniqname[i], null);
+                                continue;
+                            }
+
+                            string colvalue;
+
+                            // Check type of the vaue:
+                            Type ctype = col.GetType();
+                            if (ctype == typeof(byte[]))
+                            {
+                                // Display byte[] as 0xHEXCHARS:
+                                byte[] bytes = (byte[])col;
+                                colvalue = toHexString(bytes);
+                            }
+                            else
+                            {
+                                // All else, use TypeConverter.ConvertToString:
+                                var tc = System.ComponentModel.TypeDescriptor.GetConverter(ctype);
+                                colvalue = tc.ConvertToString(col);
+                            }
+
+                            xw.WriteElementString(uniqname[i], colvalue);
+                        }
+
+                    xw.WriteEndElement(); // row
+                }
+                xw.WriteEndElement(); // results
+
+            end:
+                xw.WriteEndElement(); // root
+            }
+        }
+
+        [System.Diagnostics.Conditional("LogQueries")]
+        private void logQuery(string query, string execURL)
+        {
+            try
+            {
+                // Log query to a rolling log file:
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(ctx.Server.MapPath("~/"), @"query.ashx.log"),
+                    String.Concat(
+                        encodeTabDelimited(DateTimeOffset.Now.ToString()), "\t",
+                        encodeTabDelimited(query), "\t",
+                        encodeTabDelimited(execURL),
+                        Environment.NewLine
+                    ),
+                    Encoding.UTF8
+                );
+            }
+            catch
+            {
+                // Not much to do here. Don't really care to warn the user if it fails.
             }
         }
 
