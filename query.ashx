@@ -108,11 +108,21 @@ pre, textarea, .monospaced, td.hexvalue
     font-weight: bold;
 }
 
-pre
+#query>pre
 {
 	font-size: small;
 	margin-left: 1em;
 	overflow-x: auto;
+}
+
+td>nobr>pre
+{
+    margin: 0
+}
+
+td>pre
+{
+    margin: 0
 }
 
 .input-table
@@ -195,9 +205,14 @@ td.nullvalue
     background-color: #AA6;
 }
 
+th
+{
+    background-color: #fda;
+}
+
 th.coltype
 {
-    background-color: #6cc;
+    background-color: #fec;
 }
 
 #footer
@@ -468,7 +483,7 @@ $(function() {
 
                             // Use the SQL type to determine column alignment:
                             string sqltype = header[colnum, 1];
-                            if (sqltype == "int" || sqltype == "decimal" || sqltype == "double")
+                            if (sqltype == "int" || sqltype == "decimal" || sqltype == "double" || sqltype == "money")
                                 align = "right";
                             else if (sqltype == "datetime" || sqltype == "datetimeoffset" || sqltype == "datetime2")
                                 isNobr = true;
@@ -513,15 +528,15 @@ $(function() {
                             }
 
                             string attrs = String.Empty;
+                            string wrapperElementStart = String.Empty;
+                            string wrapperElementEnd = String.Empty;
+
                             if (tdclass != null) attrs += " class='" + tdclass + "'";
                             if (align != null) attrs += " style='text-align: " + align + ";'";
+                            if (isNobr) { wrapperElementStart += "<nobr>"; wrapperElementEnd = "</nobr>" + wrapperElementEnd; }
+                            if (sqltype == "char") { wrapperElementStart += "<pre>"; wrapperElementEnd = "</pre>" + wrapperElementEnd; }
 
-                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>",
-                                HttpUtility.HtmlEncode(colvalue),
-                                attrs,
-                                isNobr ? "<nobr>" : String.Empty,
-                                isNobr ? "</nobr>" : String.Empty
-                            );
+                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", HttpUtility.HtmlEncode(colvalue), attrs, wrapperElementStart, wrapperElementEnd);
                         } // foreach (object col in row)
 
                         tw.Write("</tr>\n");
