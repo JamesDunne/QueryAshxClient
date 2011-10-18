@@ -45,33 +45,36 @@ namespace AdHocQuery
 
             try
             {
+                bool noHeader = false;
+                if (getFormOrQueryValue("no_header") != null) noHeader = true;
+
                 if (String.Equals(getFormOrQueryValue("output"), "json", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row a dictionary object { "column_name1": "value1", ... }
                     // Each column name must be unique or the JSON will be invalid.
-                    renderJSON(req, rsp, JsonOutput.Dictionary);
+                    renderJSON(req, rsp, JsonOutput.Dictionary, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "json2", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
                     // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
-                    renderJSON(req, rsp, JsonOutput.KeyValuePair);
+                    renderJSON(req, rsp, JsonOutput.KeyValuePair, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "json3", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
                     // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
-                    renderJSON(req, rsp, JsonOutput.Array);
+                    renderJSON(req, rsp, JsonOutput.Array, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml", StringComparison.OrdinalIgnoreCase))
                 {
                     // XML with <column name="column_name">value</column>
-                    renderXML(req, rsp, false);
+                    renderXML(req, rsp, XmlOutput.FixedColumns, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml2", StringComparison.OrdinalIgnoreCase))
                 {
-                    // XML with <column_name>value</column>; column_name is scrubbed for XML compliance and produces hard-to-predict element names.
-                    renderXML(req, rsp, true);
+                    // XML with <column_name>value</column_name>; column_name is scrubbed for XML compliance and produces hard-to-predict element names.
+                    renderXML(req, rsp, XmlOutput.NamedColumns, noHeader);
                 }
                 else
                 {
@@ -623,7 +626,7 @@ $(function() {
             Array
         }
 
-        private void renderJSON(HttpRequest req, HttpResponse rsp, JsonOutput mode)
+        private void renderJSON(HttpRequest req, HttpResponse rsp, JsonOutput mode, bool noHeader)
         {
             System.IO.TextWriter tw = rsp.Output;
 
@@ -769,19 +772,41 @@ $(function() {
             rsp.ContentEncoding = Encoding.UTF8;
 
             // JSON serialize the output:
-            tw.Write(jss.Serialize(new
+            if (noHeader)
             {
-                connection_string = cs,
-                connection_string_name = csname,
-                query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
-                query,
-                time = execTimeMsec,
-                header = headers,
-                results
-            }));
+                tw.Write(jss.Serialize(new
+                {
+                    connection_string = cs,
+                    connection_string_name = csname,
+                    query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
+                    query,
+                    time = execTimeMsec,
+                    //header = headers,
+                    results
+                }));
+            }
+            else
+            {
+                tw.Write(jss.Serialize(new
+                {
+                    connection_string = cs,
+                    connection_string_name = csname,
+                    query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
+                    query,
+                    time = execTimeMsec,
+                    header = headers,
+                    results
+                }));
+            }
         }
 
-        private void renderXML(HttpRequest req, HttpResponse rsp, bool columnIsElementName)
+        private enum XmlOutput
+        {
+            FixedColumns,
+            NamedColumns
+        }
+
+        private void renderXML(HttpRequest req, HttpResponse rsp, XmlOutput mode, bool noHeader)
         {
             System.IO.TextWriter tw = rsp.Output;
 
@@ -852,15 +877,12 @@ $(function() {
                 xw.WriteElementString("time", execTimeMsec.ToString());
 
                 // Convert the header string[,] to { name, type }[]:
-                List<object> headers = new List<object>(header.GetUpperBound(0) + 1);
                 string[] uniqname = new string[header.GetUpperBound(0) + 1];
                 HashSet<string> namesSet = new HashSet<string>();
 
-                xw.WriteStartElement("header");
+                if (!noHeader) xw.WriteStartElement("header");
                 for (int i = 0; i <= header.GetUpperBound(0); ++i)
                 {
-                    headers.Add(new { name = header[i, 0], type = header[i, 1] });
-
                     // Generate a unique name for this column:
                     string xmlname = scrubForXml(header[i, 0]);
                     if (xmlname == String.Empty) xmlname = "blank";
@@ -873,13 +895,16 @@ $(function() {
                     namesSet.Add(name);
                     uniqname[i] = name;
 
-                    xw.WriteStartElement("column");
-                    xw.WriteAttributeString("name", name);
-                    xw.WriteAttributeString("type", header[i, 1]);
-                    xw.WriteAttributeString("ordinal", i.ToString());
-                    xw.WriteEndElement(); // column
+                    if (!noHeader)
+                    {
+                        xw.WriteStartElement("column");
+                        xw.WriteAttributeString("name", name);
+                        xw.WriteAttributeString("type", header[i, 1]);
+                        xw.WriteAttributeString("ordinal", i.ToString());
+                        xw.WriteEndElement(); // column
+                    }
                 }
-                xw.WriteEndElement(); // header
+                if (!noHeader) xw.WriteEndElement(); // header
 
                 xw.WriteStartElement("results");
                 foreach (IEnumerable<object> row in rows)
@@ -891,17 +916,21 @@ $(function() {
                             object col = rowen.Current;
                             if (col == null)
                             {
-                                if (columnIsElementName)
+                                if (mode == XmlOutput.NamedColumns)
                                 {
                                     // TODO: output xsi:nil="true"
                                     xw.WriteElementString(uniqname[i], null);
                                 }
-                                else
+                                else if (mode == XmlOutput.FixedColumns)
                                 {
                                     xw.WriteStartElement("column");
                                     xw.WriteAttributeString("name", header[i, 0]);
                                     // TODO: output xsi:nil="true"
                                     xw.WriteEndElement(); // column
+                                }
+                                else
+                                {
+                                    throw new NotImplementedException("Unknown XML output mode");
                                 }
                                 continue;
                             }
@@ -923,16 +952,20 @@ $(function() {
                                 colvalue = tc.ConvertToString(col);
                             }
 
-                            if (columnIsElementName)
+                            if (mode == XmlOutput.NamedColumns)
                             {
                                 xw.WriteElementString(uniqname[i], colvalue);
                             }
-                            else
+                            else if (mode == XmlOutput.FixedColumns)
                             {
                                 xw.WriteStartElement("column");
                                 xw.WriteAttributeString("name", header[i, 0]);
                                 xw.WriteString(colvalue);
                                 xw.WriteEndElement(); // column
+                            }
+                            else
+                            {
+                                throw new NotImplementedException("Unknown XML output mode");
                             }
                         }
 
