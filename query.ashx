@@ -672,10 +672,37 @@ $(function() {
             }
 
             var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+            var final = new Dictionary<string, object>();
 
+            if (!noQuery && query != null)
+            {
+                var query_parts = new Dictionary<string, object>();
+
+                if (!String.IsNullOrEmpty(withCTEidentifier))
+                    query_parts.Add("with_cte_identifier", withCTEidentifier);
+                if (!String.IsNullOrEmpty(withCTEexpression))
+                    query_parts.Add("with_cte_expression", withCTEexpression);
+                query_parts.Add("select", select);
+                if (!String.IsNullOrEmpty(from))
+                    query_parts.Add("from", from);
+                if (!String.IsNullOrEmpty(where))
+                    query_parts.Add("where", where);
+                if (!String.IsNullOrEmpty(groupBy))
+                    query_parts.Add("groupBy", groupBy);
+                if (!String.IsNullOrEmpty(having))
+                    query_parts.Add("having", having);
+                if (!String.IsNullOrEmpty(orderBy))
+                    query_parts.Add("orderBy", orderBy);
+                final.Add("query_parts", query_parts);
+
+                final.Add("query", query);
+            }
+            
             if (errMessage != null)
             {
-                tw.Write(jss.Serialize(new { query, error = errMessage }));
+                final.Add("error", errMessage);
+
+                tw.Write(jss.Serialize(final));
                 return;
             }
 
@@ -703,6 +730,12 @@ $(function() {
                     uniqname[i] = name;
                 }
             }
+
+            if (!noHeader)
+            {
+                final.Add("header", headers);
+            }
+            final.Add("time", execTimeMsec);
 
             // Convert each result row:
             object results;
@@ -773,72 +806,10 @@ $(function() {
             {
                 results = "Unknown JSON mode!";
             }
+            
+            final.Add("results", results);
 
-            // JSON serialize the output:
-            if (noQuery)
-            {
-                if (noHeader)
-                {
-                    tw.Write(jss.Serialize(new
-                    {
-                        // Probably a security risk?
-                        //connection_string = cs,
-                        //connection_string_name = csname,
-                        // Remove query metadata:
-                        //query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
-                        //query,
-                        time = execTimeMsec,
-                        //header = headers,
-                        results
-                    }));
-                }
-                else
-                {
-                    tw.Write(jss.Serialize(new
-                    {
-                        // Probably a security risk?
-                        //connection_string = cs,
-                        //connection_string_name = csname,
-                        // Remove query metadata:
-                        //query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
-                        //query,
-                        time = execTimeMsec,
-                        header = headers,
-                        results
-                    }));
-                }
-            }
-            else
-            {
-                if (noHeader)
-                {
-                    tw.Write(jss.Serialize(new
-                    {
-                        // Probably a security risk?
-                        //connection_string = cs,
-                        //connection_string_name = csname,
-                        query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
-                        query,
-                        time = execTimeMsec,
-                        //header = headers,
-                        results
-                    }));
-                }
-                else
-                {
-                    tw.Write(jss.Serialize(new
-                    {
-                        // Probably a security risk?
-                        //connection_string = cs,
-                        //connection_string_name = csname,
-                        query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
-                        query,
-                        time = execTimeMsec,
-                        header = headers,
-                        results
-                    }));
-                }
-            }
+            tw.Write(jss.Serialize(final));
         }
 
         private enum XmlOutput
@@ -901,14 +872,22 @@ $(function() {
                 if (!noQuery)
                 {
                     xw.WriteStartElement("query_parts");
-                    xw.WriteElementString("wi", withCTEidentifier);
-                    xw.WriteElementString("we", withCTEexpression);
+
+                    if (!String.IsNullOrEmpty(withCTEidentifier))
+                        xw.WriteElementString("with_cte_identifier", withCTEidentifier);
+                    if (!String.IsNullOrEmpty(withCTEexpression))
+                        xw.WriteElementString("with_cte_expression", withCTEexpression);
                     xw.WriteElementString("select", select);
-                    xw.WriteElementString("from", from);
-                    xw.WriteElementString("where", where);
-                    xw.WriteElementString("groupBy", groupBy);
-                    xw.WriteElementString("having", having);
-                    xw.WriteElementString("orderBy", orderBy);
+                    if (!String.IsNullOrEmpty(from))
+                        xw.WriteElementString("from", from);
+                    if (!String.IsNullOrEmpty(where))
+                        xw.WriteElementString("where", where);
+                    if (!String.IsNullOrEmpty(groupBy))
+                        xw.WriteElementString("groupBy", groupBy);
+                    if (!String.IsNullOrEmpty(having))
+                        xw.WriteElementString("having", having);
+                    if (!String.IsNullOrEmpty(orderBy))
+                        xw.WriteElementString("orderBy", orderBy);
                     xw.WriteEndElement(); // query_parts
 
                     xw.WriteElementString("query", query);
