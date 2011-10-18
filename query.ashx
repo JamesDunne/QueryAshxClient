@@ -361,41 +361,6 @@ $(function() {
             // Start the <body> section:
             tw.Write("</head><body bgcolor='#ffffff' text='#222222' link='#1122cc' vlink='#6611cc' alink='#d14836'>");
 
-            // Create a UriBuilder based on the current request Uri that overrides the query-string:
-            UriBuilder execUri = new UriBuilder(req.Url);
-            execUri.Query = String.Join("&",
-                req.Form.AllKeys.Union(req.QueryString.AllKeys)
-                .Select(k => HttpUtility.UrlEncode(k) + "=" + HttpUtility.UrlEncode(getFormOrQueryValue(k)))
-                .ToArray()
-            );
-            string execURL = execUri.Uri.ToString();
-
-            string jsonURL = null, json2URL = null, json3URL = null;
-            string xmlURL = null, xml2URL = null;
-
-            if (execUri.Query.Length > 0)
-            {
-                UriBuilder jsonUri = new UriBuilder(execUri.Uri);
-                jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
-                jsonURL = jsonUri.Uri.ToString();
-
-                UriBuilder json2Uri = new UriBuilder(execUri.Uri);
-                json2Uri.Query = json2Uri.Query.Substring(1) + "&output=json2";
-                json2URL = json2Uri.Uri.ToString();
-
-                UriBuilder json3Uri = new UriBuilder(execUri.Uri);
-                json3Uri.Query = json3Uri.Query.Substring(1) + "&output=json3";
-                json3URL = json3Uri.Uri.ToString();
-
-                UriBuilder xmlUri = new UriBuilder(execUri.Uri);
-                xmlUri.Query = xmlUri.Query.Substring(1) + "&output=xml";
-                xmlURL = xmlUri.Uri.ToString();
-
-                UriBuilder xml2Uri = new UriBuilder(execUri.Uri);
-                xml2Uri.Query = xml2Uri.Query.Substring(1) + "&output=xml2";
-                xml2URL = xml2Uri.Uri.ToString();
-            }
-
             // Create the main form wrapper:
             tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
 
@@ -431,21 +396,8 @@ $(function() {
             tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
             tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
             tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
-            if (execUri.Query.Length > 0)
-            {
-                // Create a link to share this query with:
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank'>link</a>", execURL);
-                // Create a link to produce JSON output:
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", jsonURL);
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", json2URL);
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", json3URL);
-                // Create a link to produce XML output:
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", xmlURL);
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", xml2URL);
-            }
             tw.Write("</td></tr>");
             tw.Write("</tbody></table>");
-
 
             // Connection Manager:
             tw.Write("<div id='connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
@@ -507,8 +459,6 @@ $(function() {
                     goto end;
                 }
 
-                logQuery(query, execURL);
-
                 // Output table:
                 tw.Write("<div id='resultsView'>");
                 tw.Write("<h3>Results</h3>");
@@ -518,6 +468,55 @@ $(function() {
                 tw.Write("</div>");
                 tw.Write("<div style='float: right;'>");
                 tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
+                tw.Write("</div>");
+
+                // Create a UriBuilder based on the current request Uri that overrides the query-string:
+                UriBuilder execUri = new UriBuilder(req.Url);
+                execUri.Query = String.Join("&",
+                    req.Form.AllKeys.Union(req.QueryString.AllKeys)
+                    .Select(k => HttpUtility.UrlEncode(k) + "=" + HttpUtility.UrlEncode(getFormOrQueryValue(k)))
+                    .ToArray()
+                );
+                string execURL = execUri.Uri.ToString();
+
+                logQuery(query, execURL);
+
+                string jsonURL = null, json2URL = null, json3URL = null;
+                string xmlURL = null, xml2URL = null;
+
+                if (execUri.Query.Length > 0)
+                {
+                    UriBuilder jsonUri = new UriBuilder(execUri.Uri);
+                    jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
+                    jsonURL = jsonUri.Uri.ToString();
+
+                    UriBuilder json2Uri = new UriBuilder(execUri.Uri);
+                    json2Uri.Query = json2Uri.Query.Substring(1) + "&output=json2";
+                    json2URL = json2Uri.Uri.ToString();
+
+                    UriBuilder json3Uri = new UriBuilder(execUri.Uri);
+                    json3Uri.Query = json3Uri.Query.Substring(1) + "&output=json3";
+                    json3URL = json3Uri.Uri.ToString();
+
+                    UriBuilder xmlUri = new UriBuilder(execUri.Uri);
+                    xmlUri.Query = xmlUri.Query.Substring(1) + "&output=xml";
+                    xmlURL = xmlUri.Uri.ToString();
+
+                    UriBuilder xml2Uri = new UriBuilder(execUri.Uri);
+                    xml2Uri.Query = xml2Uri.Query.Substring(1) + "&output=xml2";
+                    xml2URL = xml2Uri.Uri.ToString();
+                }
+
+                tw.Write("<div style='clear: left;'>");
+                // Create a link to share this query with:
+                tw.Write("<a href=\"{0}\" target='_blank'>link</a>", execURL);
+                // Create a link to produce JSON output:
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", jsonURL);
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", json2URL);
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", json3URL);
+                // Create a link to produce XML output:
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", xmlURL);
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", xml2URL);
                 tw.Write("</div>");
 
                 // TABLE output:
