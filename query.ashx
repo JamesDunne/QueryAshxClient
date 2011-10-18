@@ -929,6 +929,9 @@ $(function() {
                 final.Add("query_parts", query_parts);
 
                 final.Add("query", query);
+
+                // FIXME? value is always a raw string value. This is good for decimal/money types, maybe not so great for everything else.
+                final.Add("parameters", parameters.Select(prm => new { name = prm.Name, type = prm.RawType, value = prm.RawValue }).ToArray());
             }
 
             if (errMessage != null)
@@ -1128,6 +1131,17 @@ $(function() {
                     xw.WriteEndElement(); // query_parts
 
                     xw.WriteElementString("query", query);
+
+                    xw.WriteStartElement("parameters");
+                    foreach (var prm in parameters)
+                    {
+                        xw.WriteStartElement("parameter");
+                        xw.WriteAttributeString("name", prm.Name);
+                        xw.WriteAttributeString("type", prm.RawType);
+                        xw.WriteString(prm.RawValue);
+                        xw.WriteEndElement(); // parameter
+                    }
+                    xw.WriteEndElement(); // parameters
                 }
 
                 // Handle errors:
