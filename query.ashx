@@ -16,6 +16,9 @@
 #define DEBUG
 //#undef DEBUG
 
+// Enable when disconnected and/or cannot access 'ajax.googleapis.com'
+#define Local
+
 // Enable logging of queries to ~/query.ashx.log
 #define LogQueries
 
@@ -353,6 +356,10 @@ th.coltype
 
             bool actionExecute = (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase));
 
+            // Validate and convert parameters:
+            ParameterValue[] parameters;
+            bool parametersValid = convertParameters(out parameters);
+
             // Dynamically show/hide the rows depending on which FORM values we have provided:
             tw.Write("<style type=\"text/css\">");
             string message = getFormOrQueryValue("msg");
@@ -372,11 +379,19 @@ th.coltype
 
             tw.WriteLine("</style>");
 
+#if Local
+            // Import jQuery 1.6.2:
+            tw.WriteLine(@"<script type=""text/javascript"" src=""jquery.min.js""></script>");
+            // Import jQueryUI 1.8.5:
+            tw.WriteLine(@"<script type=""text/javascript"" src=""jquery-ui.min.js""></script>");
+            tw.WriteLine(@"<link rel=""stylesheet"" type=""text/css"" href=""jquery-ui.css"" />");
+#else
             // Import jQuery 1.6.2:
             tw.WriteLine(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
             // Import jQueryUI 1.8.5:
             tw.WriteLine(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js""></script>");
             tw.WriteLine(@"<link rel=""stylesheet"" type=""text/css"" href=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/redmond/jquery-ui.css"" />");
+#endif
 
             string sqlTypesOptionList = javascriptStringEncode(generateOptionList(sqlTypes));
 
@@ -392,18 +407,21 @@ $(function() {
 
     // Enable the tabbed view:
     $('#tabs').tabs();
-    $('#tabs').tabs('select', " + (actionExecute ? "1" : (message != null ? "2" : "0")) + @");
+    $('#tabs').tabs('select', " + ((actionExecute && parametersValid) ? "1" : (message != null ? "2" : "0")) + @");
 
     // Enable buttons:
     $('input:submit, a, button').button();
 
     // Parameters:
+    var removeHandler = function() {
+        $(this).parent().parent().remove();
+        return false;
+    }
+    $('.btnRemove').click(removeHandler);
+
     $('#btnAddParameter').click(function() {
         $('#parametersBody').append('<tr><td><button class=\'btnRemove\'>-</button></td><td><input type=\'text\' name=\'pn\' /></td><td><select name=\'pt\'>" + sqlTypesOptionList + @"</select></td><td><input type=\'text\' name=\'pv\' /></td></tr>');
-        return false;
-    });
-    $('.btnRemove').click(function() {
-        $(this).parent().parent().remove();
+        $('.btnRemove').button().unbind('click').bind('click', removeHandler);
         return false;
     });
 
@@ -438,7 +456,7 @@ $(function() {
             tw.Write("<div id='tabs'>");
             tw.Write("<ul>");
             tw.Write("<li><a href='#tab-builder'>Query Builder</a></li>");
-            if (actionExecute) tw.Write("<li><a href='#tab-results'>Results</a></li>");
+            if (actionExecute && parametersValid) tw.Write("<li><a href='#tab-results'>Results</a></li>");
             tw.Write("<li><a href='#tab-log'>Query Log</a></li>");
             tw.Write("<li><a href='#tab-self-update'>Self-Updater</a></li>");
             tw.Write("</ul>");
@@ -471,30 +489,22 @@ $(function() {
             // Parameters:
             tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2'>");
             tw.Write("<caption>Parameters</caption>");
-            tw.Write("<thead><tr><th>&nbsp;</th><th style='width: 10em;'>Name</th><th style='width: 10em;'>Type</th><th style='width: 30em;'>Value</th></tr></thead>");
+            tw.Write("<thead><tr><th style='width: 1em;'>&nbsp;</th><th style='width: 10em;'>Name</th><th style='width: 10em;'>Type</th><th style='width: 30em;'>Value</th></tr></thead>");
             tw.Write("<tbody id='parametersBody'>");
 
-            string[] prmNames, prmTypes, prmValues;
-            prmNames = getFormOrQueryValues("pn") ?? new string[0];
-            prmTypes = getFormOrQueryValues("pt") ?? new string[0];
-            prmValues = getFormOrQueryValues("pv") ?? new string[0];
-
-            System.Diagnostics.Debug.Assert(prmNames.Length == prmTypes.Length);
-            System.Diagnostics.Debug.Assert(prmTypes.Length == prmValues.Length);
-            ParameterValue[] parameters = new ParameterValue[prmNames.Length];
-            for (int i = 0; i < prmNames.Length; ++i)
+            for (int i = 0; i < parameters.Length; ++i)
             {
-                tw.Write("<tr><td><button class='btnRemove'>-</button></td><td><input type='text' name='pn' value='{0}' /></td><td><select name='pt'>{1}</select></td><td><input type='text' name='pv' size='60' value='{2}' /></td></tr>",
-                    HttpUtility.HtmlAttributeEncode(prmNames[i]),
-                    generateOptionList(sqlTypes, prmTypes[i]),
-                    HttpUtility.HtmlAttributeEncode(prmValues[i])
+                tw.Write("<tr><td><button class='btnRemove'>-</button></td><td><input type='text' name='pn' value='{0}'></input></td><td><select name='pt'>{1}</select></td><td><input type='text' name='pv' size='60' value='{2}'></input>{3}</td></tr>",
+                    HttpUtility.HtmlAttributeEncode(parameters[i].Name),
+                    generateOptionList(sqlTypes, parameters[i].RawType),
+                    HttpUtility.HtmlAttributeEncode(parameters[i].RawValue),
+                    parameters[i].IsValid ? String.Empty : String.Format("<br/><span class='error'>{0}</span>", HttpUtility.HtmlEncode(parameters[i].ValidationMessage))
                 );
-                parameters[i] = new ParameterValue(prmNames[i], prmTypes[i], prmValues[i]);
             }
 
             tw.Write("</tbody>");
             tw.Write("<tfoot>");
-            tw.Write("<tr><td>&nbsp;</td><td><button id='btnAddParameter'>Add Parameter</button></td><td colspan='2'>&nbsp;</td></tr>");
+            tw.Write("<tr><td>&nbsp;</td><td colspan='3'><span style='float: right;'><button id='btnAddParameter'>Add</button></span></td></tr>");
             tw.Write("</tfoot>");
             tw.Write("</table>");
 
@@ -526,13 +536,13 @@ $(function() {
             tw.Write("</div>"); // id='tab-builder'
 
             // Execution:
-            if (actionExecute)
+            if (actionExecute && parametersValid)
             {
                 string query;
                 string[,] header;
                 IEnumerable<IEnumerable<object>> rows;
                 long execTimeMsec;
-                
+
                 // Execute the query:
                 string errMessage;
                 try
@@ -567,12 +577,14 @@ $(function() {
 
                 // Create a UriBuilder based on the current request Uri that overrides the query-string:
                 UriBuilder execUri = new UriBuilder(req.Url);
-                execUri.Query = String.Join("&",
-                    req.Form.AllKeys.Union(req.QueryString.AllKeys)
-                    .Where(k => !String.IsNullOrEmpty(getFormOrQueryValue(k)))
-                    .Select(k => HttpUtility.UrlEncode(k) + "=" + HttpUtility.UrlEncode(getFormOrQueryValue(k)))
-                    .ToArray()
-                );
+                execUri.Query = String.Join("&", (
+                    from key in req.Form.AllKeys.Union(req.QueryString.AllKeys)
+                    let values = getFormOrQueryValues(key)
+                    where values.Any()
+                    where (values.Length > 1) || ((values.Length == 1) && !String.IsNullOrEmpty(values[0]))
+                    from value in values
+                    select HttpUtility.UrlEncode(key) + "=" + HttpUtility.UrlEncode(value)
+                ).ToArray());
                 string execURL = execUri.Uri.ToString();
 
                 logQuery(query, execURL);
@@ -602,14 +614,14 @@ $(function() {
 
                 tw.Write("<div style='clear: both;'>");
                 // Create a link to share this query with:
-                tw.Write("<a href=\"{0}\" target='_blank'>link</a>", execURL);
+                tw.Write("<a href=\"{0}\" target='_blank'>link</a>", HttpUtility.HtmlAttributeEncode(execURL));
                 // Create a link to produce JSON output:
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", jsonURL);
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", json2URL);
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", json3URL);
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", HttpUtility.HtmlAttributeEncode(jsonURL));
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", HttpUtility.HtmlAttributeEncode(json2URL));
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", HttpUtility.HtmlAttributeEncode(json3URL));
                 // Create a link to produce XML output:
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", xmlURL);
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", xml2URL);
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", HttpUtility.HtmlAttributeEncode(xmlURL));
+                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", HttpUtility.HtmlAttributeEncode(xml2URL));
                 tw.Write("</div>");
 
                 // Timing information:
@@ -777,6 +789,29 @@ $(function() {
             tw.Write("</body></html>");
         }
 
+        private bool convertParameters(out ParameterValue[] parameters)
+        {
+            // Validate parameters:
+            string[] prmNames, prmTypes, prmValues;
+            prmNames = getFormOrQueryValues("pn") ?? new string[0];
+            prmTypes = getFormOrQueryValues("pt") ?? new string[0];
+            prmValues = getFormOrQueryValues("pv") ?? new string[0];
+
+            System.Diagnostics.Debug.Assert(prmNames.Length == prmTypes.Length);
+            System.Diagnostics.Debug.Assert(prmTypes.Length == prmValues.Length);
+
+            bool parametersValid = true;
+            parameters = new ParameterValue[prmNames.Length];
+
+            for (int i = 0; i < prmNames.Length; ++i)
+            {
+                parameters[i] = new ParameterValue(prmNames[i], prmTypes[i], prmValues[i]);
+                if (!parameters[i].IsValid) parametersValid = false;
+            }
+
+            return parametersValid;
+        }
+
         private static string generateOptionList(string[] options)
         {
             return generateOptionList(options, null);
@@ -845,6 +880,10 @@ $(function() {
             having = getFormOrQueryValue("having");
             orderBy = getFormOrQueryValue("orderBy");
 
+            // Validate and convert parameters:
+            ParameterValue[] parameters;
+            bool parametersValid = convertParameters(out parameters);
+
             string query;
             string[,] header;
             IEnumerable<IEnumerable<object>> rows;
@@ -854,7 +893,7 @@ $(function() {
             string errMessage;
             try
             {
-                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, new ParameterValue[0], out query, out header, out execTimeMsec, out rows);
+                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
             }
             catch (Exception ex)
             {
@@ -1035,6 +1074,10 @@ $(function() {
             having = getFormOrQueryValue("having");
             orderBy = getFormOrQueryValue("orderBy");
 
+            // Validate and convert parameters:
+            ParameterValue[] parameters;
+            bool parametersValid = convertParameters(out parameters);
+
             string query;
             string[,] header;
             IEnumerable<IEnumerable<object>> rows;
@@ -1044,7 +1087,7 @@ $(function() {
             string errMessage;
             try
             {
-                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, new ParameterValue[0], out query, out header, out execTimeMsec, out rows);
+                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
             }
             catch (Exception ex)
             {
@@ -1348,63 +1391,84 @@ $(function() {
         private struct ParameterValue
         {
             public readonly string Name;
+
+            public readonly string RawType;
             public readonly System.Data.SqlDbType Type;
+
+            public readonly string RawValue;
             public readonly object SqlValue;
+
+            public readonly bool IsValid;
+            public readonly string ValidationMessage;
 
             public ParameterValue(string name, string type, string value)
             {
                 Name = name;
+                RawType = type;
+                RawValue = value;
+                IsValid = true;
+                ValidationMessage = null;
 
-                switch (type)
+                try
                 {
-                    case "int":
-                        Type = System.Data.SqlDbType.Int;
-                        SqlValue = new System.Data.SqlTypes.SqlInt32(Int32.Parse(value));
-                        break;
-                    case "bit":
-                        Type = System.Data.SqlDbType.Bit;
-                        SqlValue = new System.Data.SqlTypes.SqlBoolean(Boolean.Parse(value));
-                        break;
-                    case "varchar":
-                        Type = System.Data.SqlDbType.VarChar;
-                        SqlValue = new System.Data.SqlTypes.SqlString(value);
-                        break;
-                    case "nvarchar":
-                        Type = System.Data.SqlDbType.NVarChar;
-                        SqlValue = new System.Data.SqlTypes.SqlString(value);
-                        break;
-                    case "char":
-                        Type = System.Data.SqlDbType.Char;
-                        SqlValue = new System.Data.SqlTypes.SqlString(value);
-                        break;
-                    case "nchar":
-                        Type = System.Data.SqlDbType.NChar;
-                        SqlValue = new System.Data.SqlTypes.SqlString(value);
-                        break;
-                    case "datetime":
-                        Type = System.Data.SqlDbType.DateTime;
-                        SqlValue = new System.Data.SqlTypes.SqlDateTime(DateTime.Parse(value));
-                        break;
-                    case "datetime2":
-                        Type = System.Data.SqlDbType.DateTime2;
-                        SqlValue = new System.Data.SqlTypes.SqlDateTime(DateTime.Parse(value));
-                        break;
-                    case "datetimeoffset":
-                        Type = System.Data.SqlDbType.DateTimeOffset;
-                        SqlValue = DateTimeOffset.Parse(value);
-                        break;
-                    case "decimal":
-                        Type = System.Data.SqlDbType.Decimal;
-                        SqlValue = new System.Data.SqlTypes.SqlDecimal(Decimal.Parse(value));
-                        break;
-                    case "money":
-                        Type = System.Data.SqlDbType.Money;
-                        SqlValue = new System.Data.SqlTypes.SqlMoney(Decimal.Parse(value));
-                        break;
-                    default:
-                        Type = System.Data.SqlDbType.VarChar;
-                        SqlValue = new System.Data.SqlTypes.SqlString(value);
-                        break;
+                    switch (type)
+                    {
+                        case "int":
+                            Type = System.Data.SqlDbType.Int;
+                            SqlValue = new System.Data.SqlTypes.SqlInt32(Int32.Parse(value));
+                            break;
+                        case "bit":
+                            Type = System.Data.SqlDbType.Bit;
+                            SqlValue = new System.Data.SqlTypes.SqlBoolean(Boolean.Parse(value));
+                            break;
+                        case "varchar":
+                            Type = System.Data.SqlDbType.VarChar;
+                            SqlValue = new System.Data.SqlTypes.SqlString(value);
+                            break;
+                        case "nvarchar":
+                            Type = System.Data.SqlDbType.NVarChar;
+                            SqlValue = new System.Data.SqlTypes.SqlString(value);
+                            break;
+                        case "char":
+                            Type = System.Data.SqlDbType.Char;
+                            SqlValue = new System.Data.SqlTypes.SqlString(value);
+                            break;
+                        case "nchar":
+                            Type = System.Data.SqlDbType.NChar;
+                            SqlValue = new System.Data.SqlTypes.SqlString(value);
+                            break;
+                        case "datetime":
+                            Type = System.Data.SqlDbType.DateTime;
+                            SqlValue = new System.Data.SqlTypes.SqlDateTime(DateTime.Parse(value));
+                            break;
+                        case "datetime2":
+                            Type = System.Data.SqlDbType.DateTime2;
+                            SqlValue = DateTime.Parse(value);
+                            break;
+                        case "datetimeoffset":
+                            Type = System.Data.SqlDbType.DateTimeOffset;
+                            SqlValue = DateTimeOffset.Parse(value);
+                            break;
+                        case "decimal":
+                            Type = System.Data.SqlDbType.Decimal;
+                            SqlValue = new System.Data.SqlTypes.SqlDecimal(Decimal.Parse(value));
+                            break;
+                        case "money":
+                            Type = System.Data.SqlDbType.Money;
+                            SqlValue = new System.Data.SqlTypes.SqlMoney(Decimal.Parse(value));
+                            break;
+                        default:
+                            Type = System.Data.SqlDbType.VarChar;
+                            SqlValue = new System.Data.SqlTypes.SqlString(value);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    IsValid = false;
+                    Type = System.Data.SqlDbType.VarChar;
+                    SqlValue = null;
+                    ValidationMessage = ex.Message;
                 }
             }
         }
@@ -1508,7 +1572,10 @@ $(function() {
 
             // Add parameters:
             for (int i = 0; i < parameters.Length; ++i)
+            {
+                if (!parameters[i].IsValid) return String.Format("Parameter '{0}' is invalid: {1}", parameters[i].Name, parameters[i].ValidationMessage);
                 cmd.Parameters.Add(parameters[i].Name, parameters[i].Type).SqlValue = parameters[i].SqlValue;
+            }
 
             System.Data.SqlClient.SqlDataReader dr;
 
