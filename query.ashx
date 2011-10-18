@@ -144,6 +144,12 @@ namespace AdHocQuery
             }
 
             newVersion = null;
+
+            // Redirect to the tool:
+            UriBuilder rd = new UriBuilder(req.Url);
+            rd.Query = String.Empty;
+            rsp.Redirect(rd.Uri.ToString());
+            return;
         }
 
         private void renderHTMLUI(HttpRequest req, HttpResponse rsp)
@@ -474,6 +480,10 @@ $(function() {
             tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
             tw.Write("</tbody></table></div>");
 
+            // Self-update tool:
+            tw.Write("<div id='self-update-tool'><form method='POST'>");
+            tw.Write("Self-update tool:&nbsp;<input type='submit' name='self-update' value='Update' onclick=\"javascript: return confirm('WARNING: This action will overwrite the current version of this tool with the latest version from github. Are you sure you want to do this?');\" />");
+            tw.Write("</form></div>");
 
             tw.Write("</div>"); // id='tab-builder'
 
@@ -516,12 +526,6 @@ $(function() {
                 tw.Write("<div id='resultsView'>");
                 tw.Write("<h3>Results</h3>");
                 tw.Write("<div id='resultsInner'>");
-                tw.Write("<div style='float: left;'>");
-                tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
-                tw.Write("</div>");
-                tw.Write("<div style='float: right;'>");
-                tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
-                tw.Write("</div>");
 
                 // Create a UriBuilder based on the current request Uri that overrides the query-string:
                 UriBuilder execUri = new UriBuilder(req.Url);
@@ -537,28 +541,25 @@ $(function() {
                 string jsonURL = null, json2URL = null, json3URL = null;
                 string xmlURL = null, xml2URL = null;
 
-                if (execUri.Query.Length > 0)
-                {
-                    UriBuilder jsonUri = new UriBuilder(execUri.Uri);
-                    jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
-                    jsonURL = jsonUri.Uri.ToString();
+                UriBuilder jsonUri = new UriBuilder(execUri.Uri);
+                jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
+                jsonURL = jsonUri.Uri.ToString();
 
-                    UriBuilder json2Uri = new UriBuilder(execUri.Uri);
-                    json2Uri.Query = json2Uri.Query.Substring(1) + "&output=json2";
-                    json2URL = json2Uri.Uri.ToString();
+                UriBuilder json2Uri = new UriBuilder(execUri.Uri);
+                json2Uri.Query = json2Uri.Query.Substring(1) + "&output=json2";
+                json2URL = json2Uri.Uri.ToString();
 
-                    UriBuilder json3Uri = new UriBuilder(execUri.Uri);
-                    json3Uri.Query = json3Uri.Query.Substring(1) + "&output=json3";
-                    json3URL = json3Uri.Uri.ToString();
+                UriBuilder json3Uri = new UriBuilder(execUri.Uri);
+                json3Uri.Query = json3Uri.Query.Substring(1) + "&output=json3";
+                json3URL = json3Uri.Uri.ToString();
 
-                    UriBuilder xmlUri = new UriBuilder(execUri.Uri);
-                    xmlUri.Query = xmlUri.Query.Substring(1) + "&output=xml";
-                    xmlURL = xmlUri.Uri.ToString();
+                UriBuilder xmlUri = new UriBuilder(execUri.Uri);
+                xmlUri.Query = xmlUri.Query.Substring(1) + "&output=xml";
+                xmlURL = xmlUri.Uri.ToString();
 
-                    UriBuilder xml2Uri = new UriBuilder(execUri.Uri);
-                    xml2Uri.Query = xml2Uri.Query.Substring(1) + "&output=xml2";
-                    xml2URL = xml2Uri.Uri.ToString();
-                }
+                UriBuilder xml2Uri = new UriBuilder(execUri.Uri);
+                xml2Uri.Query = xml2Uri.Query.Substring(1) + "&output=xml2";
+                xml2URL = xml2Uri.Uri.ToString();
 
                 tw.Write("<div style='clear: left;'>");
                 // Create a link to share this query with:
@@ -570,6 +571,14 @@ $(function() {
                 // Create a link to produce XML output:
                 tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", xmlURL);
                 tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", xml2URL);
+                tw.Write("</div>");
+
+                // Timing information:
+                tw.Write("<div style='float: left;'>");
+                tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
+                tw.Write("</div>");
+                tw.Write("<div style='float: right;'>");
+                tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
                 tw.Write("</div>");
 
                 // TABLE output:
