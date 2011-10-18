@@ -756,7 +756,7 @@ $(function() {
                 foreach (string[] row in logpage)
                 {
                     tw.Write("<tr>");
-                    tw.Write("<td>{0}</td><td>{1}</td><td><a href='{3}'>GO</a></td><td><nobr><pre>{2}</pre></nobr></td>",
+                    tw.Write("<td>{0}</td><td>{1}</td><td><a href=\"{3}\">GO</a></td><td><nobr><pre>{2}</pre></nobr></td>",
                         HttpUtility.HtmlEncode(row[0]),
                         HttpUtility.HtmlEncode(row[1]),
                         HttpUtility.HtmlEncode(row[2]),
