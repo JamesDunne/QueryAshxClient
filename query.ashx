@@ -369,9 +369,21 @@ $(function() {
             jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
             string jsonURL = jsonUri.Uri.ToString();
 
+            UriBuilder json2Uri = new UriBuilder(execUri.Uri);
+            json2Uri.Query = json2Uri.Query.Substring(1) + "&output=json2";
+            string json2URL = json2Uri.Uri.ToString();
+
+            UriBuilder json3Uri = new UriBuilder(execUri.Uri);
+            json3Uri.Query = json3Uri.Query.Substring(1) + "&output=json3";
+            string json3URL = json3Uri.Uri.ToString();
+
             UriBuilder xmlUri = new UriBuilder(execUri.Uri);
             xmlUri.Query = xmlUri.Query.Substring(1) + "&output=xml";
             string xmlURL = xmlUri.Uri.ToString();
+
+            UriBuilder xml2Uri = new UriBuilder(execUri.Uri);
+            xml2Uri.Query = xml2Uri.Query.Substring(1) + "&output=xml2";
+            string xml2URL = xml2Uri.Uri.ToString();
 
             // Create the main form wrapper:
             tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
@@ -411,9 +423,12 @@ $(function() {
             // Create a link to share this query with:
             tw.Write("&nbsp;<a href=\"{0}\" target='_blank'>link</a>", execURL);
             // Create a link to produce JSON output:
-            tw.Write("&nbsp;<a href=\"{0}\" target='_blank'>JSON</a>", jsonURL);
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", jsonURL);
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", json2URL);
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", json3URL);
             // Create a link to produce XML output:
-            tw.Write("&nbsp;<a href=\"{0}\" target='_blank'>XML</a>", xmlURL);
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", xmlURL);
+            tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", xml2URL);
             tw.Write("</td></tr>");
             tw.Write("</tbody></table>");
 
@@ -809,7 +824,7 @@ $(function() {
             rsp.ContentEncoding = Encoding.UTF8;
             using (var xw = new System.Xml.XmlTextWriter(tw))
             {
-                xw.WriteStartElement("root");
+                xw.WriteStartElement("response");
 
                 xw.WriteElementString("connection_string", cs);
                 xw.WriteElementString("connection_string_name", csname);
@@ -926,7 +941,7 @@ $(function() {
                 xw.WriteEndElement(); // results
 
             end:
-                xw.WriteEndElement(); // root
+                xw.WriteEndElement(); // response
             }
         }
 
