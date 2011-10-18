@@ -352,6 +352,7 @@ th.coltype
 
             // Dynamically show/hide the rows depending on which FORM values we have provided:
             tw.Write("<style type=\"text/css\">");
+            string message = getFormOrQueryValue("msg");
 
             bool displayWITH = !String.IsNullOrEmpty(withCTEidentifier) && !String.IsNullOrEmpty(withCTEexpression);
             bool displayFROM = !String.IsNullOrEmpty(from);
@@ -386,7 +387,7 @@ $(function() {
 
     // Enable the tabbed view:
     $('#tabs').tabs();
-    $('#tabs').tabs('select', " + (actionExecute ? "1" : "0") + @");
+    $('#tabs').tabs('select', " + (actionExecute ? "1" : (message != null ? "2" : "0")) + @");
 
     // Enable buttons:
     $('input:submit, a, button').button();
@@ -719,7 +720,6 @@ $(function() {
                 tw.Write("<div id='tab-self-update'><form method='POST'>");
                 tw.Write("Self-update tool:&nbsp;<input type='submit' name='self-update' value='Update' onclick=\"javascript: return confirm('WARNING: This action will overwrite the current version of this tool with the latest version from github. Are you sure you want to do this?');\" />");
                 tw.Write("</form>");
-                string message = getFormOrQueryValue("msg");
                 if (message != null)
                 {
                     tw.Write("<br/><strong>{0}</strong>", HttpUtility.HtmlEncode(message));
