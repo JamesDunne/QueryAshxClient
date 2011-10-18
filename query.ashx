@@ -131,7 +131,7 @@ namespace AdHocQuery
             try
             {
                 // TODO: skip overwriting clearly marked user-defined sections
-                System.IO.File.WriteAllText(ctx.Server.MapPath(updatePath), newVersion);
+                System.IO.File.WriteAllText(ctx.Server.MapPath(updatePath), newVersion, Encoding.UTF8);
             }
             catch (Exception ex)
             {
