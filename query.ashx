@@ -35,6 +35,11 @@ namespace AdHocQuery
         /// </summary>
         const string DefaultConnectionStringName = "FIXME";
 
+        /// <summary>
+        /// URL of the latest version to use for self-update feature.
+        /// </summary>
+        const string LatestVersionURL = "https://raw.github.com/gist/1286172/query.ashx";
+
         private HttpContext ctx;
 
         public void ProcessRequest(HttpContext ctx)
@@ -42,6 +47,12 @@ namespace AdHocQuery
             this.ctx = ctx;
             HttpRequest req = ctx.Request;
             HttpResponse rsp = ctx.Response;
+
+            if (getFormOrQueryValue("self-update") != null)
+            {
+                selfUpdate(req, rsp);
+                return;
+            }
 
             try
             {
@@ -91,6 +102,46 @@ namespace AdHocQuery
                 rsp.Write(ex.ToString());
                 return;
             }
+        }
+
+        private void selfUpdate(HttpRequest req, HttpResponse rsp)
+        {
+            string newVersion = null;
+
+            // Download the latest version from github:
+            try
+            {
+                var wreq = System.Net.HttpWebRequest.Create(LatestVersionURL);
+                using (var wrsp = wreq.GetResponse())
+                using (var wrspstr = wrsp.GetResponseStream())
+                using (var tr = new System.IO.StreamReader(wrspstr, Encoding.UTF8))
+                    newVersion = tr.ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                // Failed retrieving.
+                rsp.StatusCode = 500;
+                rsp.Output.Write("Failed retrieving latest version from github: {0}", ex.Message);
+                return;
+            }
+
+            // Update the current executing ashx file with the new contents:
+            string updatePath = ctx.Request.AppRelativeCurrentExecutionFilePath;
+
+            try
+            {
+                // TODO: skip overwriting clearly marked user-defined sections
+                System.IO.File.WriteAllText(ctx.Server.MapPath(updatePath), newVersion);
+            }
+            catch (Exception ex)
+            {
+                // Failed writing.
+                rsp.StatusCode = 500;
+                rsp.Output.Write("Failed writing latest version to '{0}': {1}", updatePath, ex.Message);
+                return;
+            }
+
+            newVersion = null;
         }
 
         private void renderHTMLUI(HttpRequest req, HttpResponse rsp)
