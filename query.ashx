@@ -47,11 +47,31 @@ namespace AdHocQuery
             {
                 if (String.Equals(getFormOrQueryValue("output"), "json", StringComparison.OrdinalIgnoreCase))
                 {
-                    renderJSON(req, rsp);
+                    // JSON with each row a dictionary object { "column_name1": "value1", ... }
+                    // Each column name must be unique or the JSON will be invalid.
+                    renderJSON(req, rsp, JsonOutput.Dictionary);
+                }
+                else if (String.Equals(getFormOrQueryValue("output"), "json2", StringComparison.OrdinalIgnoreCase))
+                {
+                    // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
+                    // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
+                    renderJSON(req, rsp, JsonOutput.KeyValuePair);
+                }
+                else if (String.Equals(getFormOrQueryValue("output"), "json3", StringComparison.OrdinalIgnoreCase))
+                {
+                    // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
+                    // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
+                    renderJSON(req, rsp, JsonOutput.Array);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml", StringComparison.OrdinalIgnoreCase))
                 {
-                    renderXML(req, rsp);
+                    // XML with <column name="column_name">value</column>
+                    renderXML(req, rsp, false);
+                }
+                else if (String.Equals(getFormOrQueryValue("output"), "xml2", StringComparison.OrdinalIgnoreCase))
+                {
+                    // XML with <column_name>value</column>; column_name is scrubbed for XML compliance and produces hard-to-predict element names.
+                    renderXML(req, rsp, true);
                 }
                 else
                 {
@@ -346,11 +366,11 @@ $(function() {
             string execURL = execUri.Uri.ToString();
 
             UriBuilder jsonUri = new UriBuilder(execUri.Uri);
-            jsonUri.Query = jsonUri.Query + "&output=json";
+            jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
             string jsonURL = jsonUri.Uri.ToString();
 
             UriBuilder xmlUri = new UriBuilder(execUri.Uri);
-            xmlUri.Query = xmlUri.Query + "&output=xml";
+            xmlUri.Query = xmlUri.Query.Substring(1) + "&output=xml";
             string xmlURL = xmlUri.Uri.ToString();
 
             // Create the main form wrapper:
@@ -581,7 +601,14 @@ $(function() {
             return sbhex.ToString();
         }
 
-        private void renderJSON(HttpRequest req, HttpResponse rsp)
+        private enum JsonOutput
+        {
+            Dictionary,
+            KeyValuePair,
+            Array
+        }
+
+        private void renderJSON(HttpRequest req, HttpResponse rsp, JsonOutput mode)
         {
             System.IO.TextWriter tw = rsp.Output;
 
@@ -636,31 +663,90 @@ $(function() {
             {
                 headers.Add(new { name = header[i, 0], type = header[i, 1], ordinal = i });
 
-                // Generate a unique name for this column:
-                string name = header[i, 0];
-                int ctr = 0;
-                while (namesSet.Contains(name)) name = header[i, 0] + "_" + (ctr++).ToString();
+                if (mode == JsonOutput.Dictionary)
+                {
+                    // Generate a unique name for this column:
+                    string jsonname = header[i, 0];
+                    if (jsonname == String.Empty) jsonname = "blank";
 
-                namesSet.Add(name);
-                uniqname[i] = name;
+                    string name = jsonname;
+
+                    int ctr = 0;
+                    while (namesSet.Contains(name)) name = jsonname + "_" + (++ctr).ToString();
+
+                    namesSet.Add(name);
+                    uniqname[i] = name;
+                }
             }
 
             // Convert each result row:
-            var results = new List<Dictionary<string, object>>();
-            foreach (IEnumerable<object> row in rows)
+            object results;
+            if (mode == JsonOutput.Dictionary)
             {
-                var result = new Dictionary<string, object>();
+                var list = new List<Dictionary<string, object>>();
+                foreach (IEnumerable<object> row in rows)
+                {
+                    var result = new Dictionary<string, object>();
 
-                using (var rowen = row.GetEnumerator())
-                    for (int i = 0; rowen.MoveNext(); ++i)
-                    {
-                        object col = rowen.Current;
-                        // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
+                    // { "colname1": "value1", "colname2": "value2" ... }
+                    using (var rowen = row.GetEnumerator())
+                        for (int i = 0; rowen.MoveNext(); ++i)
+                        {
+                            object col = rowen.Current;
+                            // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
 
-                        result.Add(uniqname[i], col);
-                    }
+                            result.Add(uniqname[i], col);
+                        }
 
-                results.Add(result);
+                    list.Add(result);
+                }
+                results = list;
+            }
+            else if (mode == JsonOutput.KeyValuePair)
+            {
+                var list = new List<object>();
+                foreach (IEnumerable<object> row in rows)
+                {
+                    var result = new List<Dictionary<string, object>>();
+
+                    // [ { "name": "col1", "value": 1 }, { "name": "col2", "value": null } ... ]
+                    using (var rowen = row.GetEnumerator())
+                        for (int i = 0; rowen.MoveNext(); ++i)
+                        {
+                            object col = rowen.Current;
+                            // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
+
+                            result.Add(new Dictionary<string, object> { { "name", header[i, 0] }, { "value", col } });
+                        }
+
+                    list.Add(result);
+                }
+                results = list;
+            }
+            else if (mode == JsonOutput.Array)
+            {
+                var list = new List<List<object>>();
+                foreach (IEnumerable<object> row in rows)
+                {
+                    var result = new List<object>();
+
+                    // [ value1, value2, value3, ... ]
+                    using (var rowen = row.GetEnumerator())
+                        for (int i = 0; rowen.MoveNext(); ++i)
+                        {
+                            object col = rowen.Current;
+                            // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
+
+                            result.Add(col);
+                        }
+
+                    list.Add(result);
+                }
+                results = list;
+            }
+            else
+            {
+                results = "Unknown JSON mode!";
             }
 
             rsp.StatusCode = 200;
@@ -680,7 +766,7 @@ $(function() {
             }));
         }
 
-        private void renderXML(HttpRequest req, HttpResponse rsp)
+        private void renderXML(HttpRequest req, HttpResponse rsp, bool columnIsElementName)
         {
             System.IO.TextWriter tw = rsp.Output;
 
@@ -761,10 +847,13 @@ $(function() {
                     headers.Add(new { name = header[i, 0], type = header[i, 1] });
 
                     // Generate a unique name for this column:
-                    // TODO: make it an XML friendly name
-                    string name = header[i, 0];
+                    string xmlname = scrubForXml(header[i, 0]);
+                    if (xmlname == String.Empty) xmlname = "blank";
+
+                    string name = xmlname;
+
                     int ctr = 0;
-                    while (namesSet.Contains(name)) name = header[i, 0] + "_" + (ctr++).ToString();
+                    while (namesSet.Contains(name)) name = xmlname + "_" + (++ctr).ToString();
 
                     namesSet.Add(name);
                     uniqname[i] = name;
@@ -787,8 +876,18 @@ $(function() {
                             object col = rowen.Current;
                             if (col == null)
                             {
-                                // TODO: output xsi:nil="true"
-                                xw.WriteElementString(uniqname[i], null);
+                                if (columnIsElementName)
+                                {
+                                    // TODO: output xsi:nil="true"
+                                    xw.WriteElementString(uniqname[i], null);
+                                }
+                                else
+                                {
+                                    xw.WriteStartElement("column");
+                                    xw.WriteAttributeString("name", header[i, 0]);
+                                    // TODO: output xsi:nil="true"
+                                    xw.WriteEndElement(); // column
+                                }
                                 continue;
                             }
 
@@ -809,7 +908,17 @@ $(function() {
                                 colvalue = tc.ConvertToString(col);
                             }
 
-                            xw.WriteElementString(uniqname[i], colvalue);
+                            if (columnIsElementName)
+                            {
+                                xw.WriteElementString(uniqname[i], colvalue);
+                            }
+                            else
+                            {
+                                xw.WriteStartElement("column");
+                                xw.WriteAttributeString("name", header[i, 0]);
+                                xw.WriteString(colvalue);
+                                xw.WriteEndElement(); // column
+                            }
                         }
 
                     xw.WriteEndElement(); // row
@@ -819,6 +928,31 @@ $(function() {
             end:
                 xw.WriteEndElement(); // root
             }
+        }
+
+        private static string scrubForXml(string name)
+        {
+            if (name == null) return String.Empty;
+            if (name.Length == 0) return String.Empty;
+
+            StringBuilder sb = new StringBuilder(name.Length);
+
+            char c = name[0];
+            if (!Char.IsLetter(c) && c != '_')
+                sb.Append('_');
+            else
+                sb.Append(c);
+
+            for (int i = 1; i < name.Length; ++i)
+            {
+                c = name[i];
+                if (!Char.IsLetterOrDigit(c) && c != '_')
+                    sb.Append('_');
+                else
+                    sb.Append(c);
+            }
+
+            return sb.ToString();
         }
 
         [System.Diagnostics.Conditional("LogQueries")]
