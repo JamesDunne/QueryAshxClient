@@ -528,6 +528,7 @@ $(function() {
                 UriBuilder execUri = new UriBuilder(req.Url);
                 execUri.Query = String.Join("&",
                     req.Form.AllKeys.Union(req.QueryString.AllKeys)
+                    .Where(k => !String.IsNullOrEmpty(getFormOrQueryValue(k)))
                     .Select(k => HttpUtility.UrlEncode(k) + "=" + HttpUtility.UrlEncode(getFormOrQueryValue(k)))
                     .ToArray()
                 );
@@ -535,8 +536,8 @@ $(function() {
 
                 logQuery(query, execURL);
 
-                string jsonURL = null, json2URL = null, json3URL = null;
-                string xmlURL = null, xml2URL = null;
+                string jsonURL, json2URL, json3URL;
+                string xmlURL, xml2URL;
 
                 UriBuilder jsonUri = new UriBuilder(execUri.Uri);
                 jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
