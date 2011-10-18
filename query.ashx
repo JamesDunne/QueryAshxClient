@@ -177,7 +177,7 @@ a
 
 #footer,#header
 {
-	/*background-color: #daf4ff;*/
+    /*background-color: #daf4ff;*/
 }
 
 #header
@@ -189,29 +189,29 @@ h3
 {
     margin-top: 0.5em;
     margin-bottom: 0.25em;
-	font-family: Tahoma, Arial;
-	font-weight: bold;
-	font-size: small;
+    font-family: Tahoma, Arial;
+    font-weight: bold;
+    font-size: small;
 }
 
 p, li
 {
-	font-family: Tahoma, Arial;
-	font-weight: normal;
-	font-size: small;
-	margin-top: 0.25em;
-	margin-bottom: 0em;
+    font-family: Tahoma, Arial;
+    font-weight: normal;
+    font-size: small;
+    margin-top: 0.25em;
+    margin-bottom: 0em;
 }
 
 .exception
 {
-	font-weight: bold;
-	font-size: small;
+    font-weight: bold;
+    font-size: small;
 }
 
 pre, textarea, .monospaced, td.hexvalue
 {
-	font-family: Anonymous Pro, Anonymous, Consolas, Courier New, Courier;
+    font-family: Anonymous Pro, Anonymous, Consolas, Courier New, Courier;
 }
 
 .sqlkeyword
@@ -221,9 +221,9 @@ pre, textarea, .monospaced, td.hexvalue
 
 #query>pre
 {
-	font-size: small;
-	margin-left: 1em;
-	overflow-x: auto;
+    font-size: small;
+    margin-left: 1em;
+    overflow-x: auto;
 }
 
 td>nobr>pre
@@ -238,37 +238,37 @@ td>pre
 
 .input-table
 {
-	font-family: Tahoma, Segoe UI, Arial;
-	font-size: small;
-	padding-bottom: 1em;
+    font-family: Tahoma, Segoe UI, Arial;
+    font-size: small;
+    padding-bottom: 1em;
 }
 
 .input-table>caption
 {
-	font-family: Tahoma, Segoe UI, Arial;
-	font-size: medium;
-	font-weight: bold;
+    font-family: Tahoma, Segoe UI, Arial;
+    font-size: medium;
+    font-weight: bold;
 }
 
 .input-table>caption,.input-table>thead,.input-table>tfoot
 {
-	background-color: #3ef;
+    background-color: #3ef;
 }
 
 .input-table>tbody>tr:nth-child(even)
 {
-	background-color: #eef;
+    background-color: #eef;
 }
 
 div#resultsView
 {
     display: block;
-	margin-top: 0.5em;
+    margin-top: 0.5em;
 }
 
 div#resultsInner
 {
-	margin-left: 1em;
+    margin-left: 1em;
 }
 
 div#resultsTableDiv
@@ -282,15 +282,15 @@ div#resultsTableDiv
 
 #resultsTable
 {
-	font-family: Tahoma, Segoe UI, Arial;
-	font-size: small;
-	border-style: solid;
-	border-width: thin;
+    font-family: Tahoma, Segoe UI, Arial;
+    font-size: small;
+    border-style: solid;
+    border-width: thin;
 }
 
 #resultsTable>colgroup:nth-child(even)
 {
-	background-color: #f3f3aa;
+    background-color: #f3f3aa;
 }
 
 #resultsTable>thead
@@ -301,7 +301,7 @@ div#resultsTableDiv
 
 #resultsTable>tbody>tr:nth-child(even)
 {
-	background-color: #eef;
+    background-color: #eef;
 }
 
 td.rn
@@ -330,8 +330,8 @@ th.coltype
 {
     padding-top: 2em;
     font-family: Tahoma, Arial;
-	font-weight: normal;
-	font-size: small;
+    font-weight: normal;
+    font-size: small;
 }
 </style>");
 
@@ -361,23 +361,23 @@ th.coltype
             bool displayGROUPBY = !String.IsNullOrEmpty(groupBy);
             bool displayHAVING = !String.IsNullOrEmpty(having);
             bool displayORDERBY = !String.IsNullOrEmpty(orderBy);
-            tw.Write("tr#rowWITH    {{ {0} }}", displayWITH ? String.Empty : "display: none;");
-            tw.Write("tr#rowFROM    {{ {0} }}", displayFROM ? String.Empty : "display: none;");
-            tw.Write("tr#rowWHERE   {{ {0} }}", displayWHERE ? String.Empty : "display: none;");
-            tw.Write("tr#rowGROUPBY {{ {0} }}", displayGROUPBY ? String.Empty : "display: none;");
-            tw.Write("tr#rowHAVING  {{ {0} }}", displayHAVING ? String.Empty : "display: none;");
-            tw.Write("tr#rowORDERBY {{ {0} }}", displayORDERBY ? String.Empty : "display: none;");
+            tw.WriteLine("tr#rowWITH    {{ {0} }}", displayWITH ? String.Empty : "display: none;");
+            tw.WriteLine("tr#rowFROM    {{ {0} }}", displayFROM ? String.Empty : "display: none;");
+            tw.WriteLine("tr#rowWHERE   {{ {0} }}", displayWHERE ? String.Empty : "display: none;");
+            tw.WriteLine("tr#rowGROUPBY {{ {0} }}", displayGROUPBY ? String.Empty : "display: none;");
+            tw.WriteLine("tr#rowHAVING  {{ {0} }}", displayHAVING ? String.Empty : "display: none;");
+            tw.WriteLine("tr#rowORDERBY {{ {0} }}", displayORDERBY ? String.Empty : "display: none;");
 
-            tw.Write("</style>");
+            tw.WriteLine("</style>");
 
             // Import jQuery 1.6.2:
-            tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
+            tw.WriteLine(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js""></script>");
             // Import jQueryUI 1.8.5:
-            tw.Write(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js""></script>");
-            tw.Write(@"<link rel=""stylesheet"" type=""text/css"" href=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/redmond/jquery-ui.css"" />");
+            tw.WriteLine(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js""></script>");
+            tw.WriteLine(@"<link rel=""stylesheet"" type=""text/css"" href=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/redmond/jquery-ui.css"" />");
 
             // Now write out the javascript to allow toggling of show/hide per each query builder row:
-            tw.Write(@"<script type=""text/javascript""><!--
+            tw.WriteLine(@"<script type=""text/javascript""><!--
 $(function() {
     $('#btnWITH')   .click(function() { $('#rowWITH').toggle(); return false; });
     $('#btnFROM')   .click(function() { $('#rowFROM').toggle(); return false; });
