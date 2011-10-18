@@ -420,7 +420,7 @@ $(function() {
     $('.btnRemove').click(removeHandler);
 
     $('#btnAddParameter').click(function() {
-        $('#parametersBody').append('<tr><td><button class=\'btnRemove\'>-</button></td><td><input type=\'text\' name=\'pn\' /></td><td><select name=\'pt\'>" + sqlTypesOptionList + @"</select></td><td><input type=\'text\' name=\'pv\' /></td></tr>');
+        $('#parametersBody').append('<tr><td><button class=\'btnRemove\'>-</button></td><td><input type=\'text\' name=\'pn\' /></td><td><select name=\'pt\'>" + sqlTypesOptionList + @"</select></td><td><input type=\'text\' name=\'pv\' size=\'60\' /></td></tr>');
         $('.btnRemove').button().unbind('click').bind('click', removeHandler);
         return false;
     });
