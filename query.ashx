@@ -106,6 +106,9 @@ namespace AdHocQuery
 
         private void selfUpdate(HttpRequest req, HttpResponse rsp)
         {
+            string updateAppRelPath = req.AppRelativeCurrentExecutionFilePath;
+            string updateAbsPath = ctx.Server.MapPath(updateAppRelPath);
+
             string newVersion = null;
 
             // Download the latest version from github:
@@ -126,18 +129,17 @@ namespace AdHocQuery
             }
 
             // Update the current executing ashx file with the new contents:
-            string updatePath = ctx.Request.AppRelativeCurrentExecutionFilePath;
 
             try
             {
                 // TODO: skip overwriting clearly marked user-defined sections
-                System.IO.File.WriteAllText(ctx.Server.MapPath(updatePath), newVersion, Encoding.UTF8);
+                System.IO.File.WriteAllText(updateAbsPath, newVersion, Encoding.UTF8);
             }
             catch (Exception ex)
             {
                 // Failed writing.
                 rsp.StatusCode = 500;
-                rsp.Output.Write("Failed writing latest version to '{0}': {1}", updatePath, ex.Message);
+                rsp.Output.Write("Failed writing latest version to '{0}': {1}", updateAppRelPath, ex.Message);
                 return;
             }
 
