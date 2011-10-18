@@ -147,7 +147,7 @@ namespace AdHocQuery
 
             // Redirect to the tool:
             UriBuilder rd = new UriBuilder(req.Url);
-            rd.Query = String.Empty;
+            rd.Query = "msg=Update+successful.";
             rsp.Redirect(rd.Uri.ToString());
             return;
         }
@@ -483,7 +483,13 @@ $(function() {
             // Self-update tool:
             tw.Write("<div id='self-update-tool'><form method='POST'>");
             tw.Write("Self-update tool:&nbsp;<input type='submit' name='self-update' value='Update' onclick=\"javascript: return confirm('WARNING: This action will overwrite the current version of this tool with the latest version from github. Are you sure you want to do this?');\" />");
-            tw.Write("</form></div>");
+            tw.Write("</form>");
+            string message = getFormOrQueryValue("msg");
+            if (message != null)
+            {
+                tw.Write("<br/><strong>{0}</strong>", HttpUtility.HtmlEncode(message));
+            }
+            tw.Write("</div>");
 
             tw.Write("</div>"); // id='tab-builder'
 
