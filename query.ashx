@@ -13,8 +13,8 @@
 // TODO: add optional TOP(N) clause
 
 // This changes depending on if attached to a debugger, apparently.
-//#define DEBUG
-#undef DEBUG
+#define DEBUG
+//#undef DEBUG
 
 // Enable logging of queries to ~/query.ashx.log
 #define LogQueries
@@ -151,6 +151,8 @@ namespace AdHocQuery
             rsp.Redirect(rd.Uri.ToString());
             return;
         }
+
+        private readonly string[] sqlTypes = new string[] { "int", "bit", "varchar", "nvarchar", "char", "nchar", "datetime", "datetime2", "datetimeoffset", "decimal", "money" };
 
         private void renderHTMLUI(HttpRequest req, HttpResponse rsp)
         {
@@ -376,6 +378,8 @@ th.coltype
             tw.WriteLine(@"<script type=""text/javascript"" src=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js""></script>");
             tw.WriteLine(@"<link rel=""stylesheet"" type=""text/css"" href=""http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/redmond/jquery-ui.css"" />");
 
+            string sqlTypesOptionList = javascriptStringEncode(generateOptionList(sqlTypes));
+
             // Now write out the javascript to allow toggling of show/hide per each query builder row:
             tw.WriteLine(@"<script type=""text/javascript""><!--
 $(function() {
@@ -392,6 +396,16 @@ $(function() {
 
     // Enable buttons:
     $('input:submit, a, button').button();
+
+    // Parameters:
+    $('#btnAddParameter').click(function() {
+        $('#parametersBody').append('<tr><td><button class=\'btnRemove\'>-</button></td><td><input type=\'text\' name=\'pn\' /></td><td><select name=\'pt\'>" + sqlTypesOptionList + @"</select></td><td><input type=\'text\' name=\'pv\' /></td></tr>');
+        return false;
+    });
+    $('.btnRemove').click(function() {
+        $(this).parent().parent().remove();
+        return false;
+    });
 
     var coltypeVisible = false;
     $('#toggleColumnTypeHeaders').click(function() {
@@ -452,9 +466,40 @@ $(function() {
             tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
             tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
             tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
-            tw.Write("<tr><td>&nbsp;</td><td><input type='submit' name='action' value='Execute' />");
-            tw.Write("</td></tr>");
             tw.Write("</tbody></table>");
+
+            // Parameters:
+            tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2'>");
+            tw.Write("<caption>Parameters</caption>");
+            tw.Write("<thead><tr><th>&nbsp;</th><th style='width: 10em;'>Name</th><th style='width: 10em;'>Type</th><th style='width: 30em;'>Value</th></tr></thead>");
+            tw.Write("<tbody id='parametersBody'>");
+
+            string[] prmNames, prmTypes, prmValues;
+            prmNames = getFormOrQueryValues("pn") ?? new string[0];
+            prmTypes = getFormOrQueryValues("pt") ?? new string[0];
+            prmValues = getFormOrQueryValues("pv") ?? new string[0];
+
+            System.Diagnostics.Debug.Assert(prmNames.Length == prmTypes.Length);
+            System.Diagnostics.Debug.Assert(prmTypes.Length == prmValues.Length);
+            ParameterValue[] parameters = new ParameterValue[prmNames.Length];
+            for (int i = 0; i < prmNames.Length; ++i)
+            {
+                tw.Write("<tr><td><button class='btnRemove'>-</button></td><td><input type='text' name='pn' value='{0}' /></td><td><select name='pt'>{1}</select></td><td><input type='text' name='pv' size='60' value='{2}' /></td></tr>",
+                    HttpUtility.HtmlAttributeEncode(prmNames[i]),
+                    generateOptionList(sqlTypes, prmTypes[i]),
+                    HttpUtility.HtmlAttributeEncode(prmValues[i])
+                );
+                parameters[i] = new ParameterValue(prmNames[i], prmTypes[i], prmValues[i]);
+            }
+
+            tw.Write("</tbody>");
+            tw.Write("<tfoot>");
+            tw.Write("<tr><td>&nbsp;</td><td><button id='btnAddParameter'>Add Parameter</button></td><td colspan='2'>&nbsp;</td></tr>");
+            tw.Write("</tfoot>");
+            tw.Write("</table>");
+
+            // Execute button:
+            tw.Write("<input type='submit' name='action' value='Execute' />");
 
             // Connection Manager:
             tw.Write("<div id='connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
@@ -487,12 +532,12 @@ $(function() {
                 string[,] header;
                 IEnumerable<IEnumerable<object>> rows;
                 long execTimeMsec;
-
+                
                 // Execute the query:
                 string errMessage;
                 try
                 {
-                    errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
+                    errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
                 }
                 catch (Exception ex)
                 {
@@ -732,6 +777,30 @@ $(function() {
             tw.Write("</body></html>");
         }
 
+        private static string generateOptionList(string[] options)
+        {
+            return generateOptionList(options, null);
+        }
+
+        private static string generateOptionList(string[] options, string selected)
+        {
+            // Predict enough space to generate the option list:
+            StringBuilder sb = new StringBuilder(options.Sum(opt => "<option></option>".Length + opt.Length) + " selected='selected'".Length);
+            for (int i = 0; i < options.Length; ++i)
+                sb.AppendFormat("<option{1}>{0}</option>",
+                    HttpUtility.HtmlEncode(options[i]),
+                    (options[i] == selected)
+                    ? " selected='selected'"
+                    : String.Empty
+                );
+            return sb.ToString();
+        }
+
+        private static string javascriptStringEncode(string text)
+        {
+            return text.Replace("'", "\\'");
+        }
+
         private static string toHexString(byte[] bytes)
         {
             const string hexChars = "0123456789ABCDEF";
@@ -785,7 +854,7 @@ $(function() {
             string errMessage;
             try
             {
-                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
+                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, new ParameterValue[0], out query, out header, out execTimeMsec, out rows);
             }
             catch (Exception ex)
             {
@@ -975,7 +1044,7 @@ $(function() {
             string errMessage;
             try
             {
-                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, out query, out header, out execTimeMsec, out rows);
+                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, new ParameterValue[0], out query, out header, out execTimeMsec, out rows);
             }
             catch (Exception ex)
             {
@@ -1207,6 +1276,11 @@ $(function() {
             return ctx.Request.Form[name] ?? ctx.Request.QueryString[name];
         }
 
+        private string[] getFormOrQueryValues(string name)
+        {
+            return ctx.Request.Form.GetValues(name) ?? ctx.Request.QueryString.GetValues(name);
+        }
+
         private static string encodeTabDelimited(string value)
         {
             StringBuilder sbResult = new StringBuilder(value.Length * 3 / 2);
@@ -1271,7 +1345,71 @@ $(function() {
             return result;
         }
 
-        public string QuerySQL(
+        private struct ParameterValue
+        {
+            public readonly string Name;
+            public readonly System.Data.SqlDbType Type;
+            public readonly object SqlValue;
+
+            public ParameterValue(string name, string type, string value)
+            {
+                Name = name;
+
+                switch (type)
+                {
+                    case "int":
+                        Type = System.Data.SqlDbType.Int;
+                        SqlValue = new System.Data.SqlTypes.SqlInt32(Int32.Parse(value));
+                        break;
+                    case "bit":
+                        Type = System.Data.SqlDbType.Bit;
+                        SqlValue = new System.Data.SqlTypes.SqlBoolean(Boolean.Parse(value));
+                        break;
+                    case "varchar":
+                        Type = System.Data.SqlDbType.VarChar;
+                        SqlValue = new System.Data.SqlTypes.SqlString(value);
+                        break;
+                    case "nvarchar":
+                        Type = System.Data.SqlDbType.NVarChar;
+                        SqlValue = new System.Data.SqlTypes.SqlString(value);
+                        break;
+                    case "char":
+                        Type = System.Data.SqlDbType.Char;
+                        SqlValue = new System.Data.SqlTypes.SqlString(value);
+                        break;
+                    case "nchar":
+                        Type = System.Data.SqlDbType.NChar;
+                        SqlValue = new System.Data.SqlTypes.SqlString(value);
+                        break;
+                    case "datetime":
+                        Type = System.Data.SqlDbType.DateTime;
+                        SqlValue = new System.Data.SqlTypes.SqlDateTime(DateTime.Parse(value));
+                        break;
+                    case "datetime2":
+                        Type = System.Data.SqlDbType.DateTime2;
+                        SqlValue = new System.Data.SqlTypes.SqlDateTime(DateTime.Parse(value));
+                        break;
+                    case "datetimeoffset":
+                        Type = System.Data.SqlDbType.DateTimeOffset;
+                        SqlValue = DateTimeOffset.Parse(value);
+                        break;
+                    case "decimal":
+                        Type = System.Data.SqlDbType.Decimal;
+                        SqlValue = new System.Data.SqlTypes.SqlDecimal(Decimal.Parse(value));
+                        break;
+                    case "money":
+                        Type = System.Data.SqlDbType.Money;
+                        SqlValue = new System.Data.SqlTypes.SqlMoney(Decimal.Parse(value));
+                        break;
+                    default:
+                        Type = System.Data.SqlDbType.VarChar;
+                        SqlValue = new System.Data.SqlTypes.SqlString(value);
+                        break;
+                }
+            }
+        }
+
+        private string QuerySQL(
             [QueryParameter("Named connection string")]             string csname,
             [QueryParameter("Custom connection string")]            string cs,
 
@@ -1287,6 +1425,8 @@ $(function() {
             [QueryParameter("GROUP BY ...")]                        string groupBy,
             [QueryParameter("HAVING ...")]                          string having,
             [QueryParameter("ORDER BY ...")]                        string orderBy,
+
+            ParameterValue[] parameters,
 
             out string query,
             out string[,] header,
@@ -1365,6 +1505,10 @@ $(function() {
             cmd.CommandText = query;
             cmd.CommandType = System.Data.CommandType.Text;
             cmd.CommandTimeout = 360;   // seconds
+
+            // Add parameters:
+            for (int i = 0; i < parameters.Length; ++i)
+                cmd.Parameters.Add(parameters[i].Name, parameters[i].Type).SqlValue = parameters[i].SqlValue;
 
             System.Data.SqlClient.SqlDataReader dr;
 
