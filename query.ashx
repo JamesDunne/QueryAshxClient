@@ -427,8 +427,9 @@ $(function() {
             tw.Write("<div id='tabs'>");
             tw.Write("<ul>");
             tw.Write("<li><a href='#tab-builder'>Query Builder</a></li>");
-            if (actionExecute)
-                tw.Write("<li><a href='#tab-results'>Results</a></li>");
+            if (actionExecute) tw.Write("<li><a href='#tab-results'>Results</a></li>");
+            tw.Write("<li><a href='#tab-log'>Query Log</a></li>");
+            tw.Write("<li><a href='#tab-self-update'>Self-Updater</a></li>");
             tw.Write("</ul>");
 
 
@@ -479,17 +480,6 @@ $(function() {
 #endif
             tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
             tw.Write("</tbody></table></div>");
-
-            // Self-update tool:
-            tw.Write("<div id='self-update-tool'><form method='POST'>");
-            tw.Write("Self-update tool:&nbsp;<input type='submit' name='self-update' value='Update' onclick=\"javascript: return confirm('WARNING: This action will overwrite the current version of this tool with the latest version from github. Are you sure you want to do this?');\" />");
-            tw.Write("</form>");
-            string message = getFormOrQueryValue("msg");
-            if (message != null)
-            {
-                tw.Write("<br/><strong>{0}</strong>", HttpUtility.HtmlEncode(message));
-            }
-            tw.Write("</div>");
 
             tw.Write("</div>"); // id='tab-builder'
 
@@ -675,6 +665,66 @@ $(function() {
 
             end:
                 tw.Write("</div>"); // id='tab-results'
+            }
+
+            // Query log tab:
+            {
+                tw.Write("<div id='tab-log'>");
+
+                const int pagesize = 10;
+
+                int pagenumber;
+                if (!Int32.TryParse(getFormOrQueryValue("pn"), out pagenumber))
+                    pagenumber = 1;
+                if (pagenumber < 1) pagenumber = 1;
+
+                int pageindex = pagenumber - 1;
+
+                // Load the log records in a lazy fashion:
+                IEnumerable<string[]> logrecords = getLogRecords();
+
+                // Pull up a page of log records:
+                List<string[]> logpage = logrecords.Reverse().Skip(pageindex * pagesize).Take(pagesize).ToList();
+                if (logpage.Count == 0)
+                {
+                    tw.Write("No log records.");
+                    goto end;
+                }
+
+                tw.Write("<table border='0'>");
+                tw.Write("<thead>");
+                tw.Write("<tr><th>Date</th><th>Source</th><th>Execute</th><th>Query</th></tr>");
+                tw.Write("</thead>");
+                tw.Write("<tbody>");
+                foreach (string[] row in logpage)
+                {
+                    tw.Write("<tr>");
+                    tw.Write("<td>{0}</td><td>{1}</td><td><a href='{3}'>GO</a></td><td><nobr><pre>{2}</pre></nobr></td>",
+                        HttpUtility.HtmlEncode(row[0]),
+                        HttpUtility.HtmlEncode(row[1]),
+                        HttpUtility.HtmlEncode(row[2]),
+                        HttpUtility.HtmlAttributeEncode(row[3])
+                    );
+                    tw.Write("</tr>");
+                }
+                tw.Write("</tbody>");
+                tw.Write("</table>");
+
+            end:
+                tw.Write("</div>"); // id='tab-log'
+            }
+
+            // Self-update tool:
+            {
+                tw.Write("<div id='tab-self-update'><form method='POST'>");
+                tw.Write("Self-update tool:&nbsp;<input type='submit' name='self-update' value='Update' onclick=\"javascript: return confirm('WARNING: This action will overwrite the current version of this tool with the latest version from github. Are you sure you want to do this?');\" />");
+                tw.Write("</form>");
+                string message = getFormOrQueryValue("msg");
+                if (message != null)
+                {
+                    tw.Write("<br/><strong>{0}</strong>", HttpUtility.HtmlEncode(message));
+                }
+                tw.Write("</div>"); // id='tab-self-update'
             }
 
             // End:
@@ -1105,6 +1155,26 @@ $(function() {
             return sb.ToString();
         }
 
+        #region Logging
+
+        private string LogPath { get { return ctx.Server.MapPath(ctx.Request.AppRelativeCurrentExecutionFilePath + ".log"); } }
+
+        private IEnumerable<string[]> getLogRecords()
+        {
+            var logfi = new System.IO.FileInfo(LogPath);
+            if (!logfi.Exists) yield break;
+
+            string[] lines = System.IO.File.ReadAllLines(LogPath, Encoding.UTF8);
+            foreach (string line in lines)
+            {
+                string[] row = splitTabDelimited(line);
+                if (row.Length != 4) continue;
+
+                yield return row;
+            }
+            yield break;
+        }
+
         [System.Diagnostics.Conditional("LogQueries")]
         private void logQuery(string query, string execURL)
         {
@@ -1112,9 +1182,10 @@ $(function() {
             {
                 // Log query to a rolling log file:
                 System.IO.File.AppendAllText(
-                    System.IO.Path.Combine(ctx.Server.MapPath("~/"), @"query.ashx.log"),
+                    LogPath,
                     String.Concat(
                         encodeTabDelimited(DateTimeOffset.Now.ToString()), "\t",
+                        encodeTabDelimited(ctx.Request.UserHostName ?? ctx.Request.UserHostAddress ?? String.Empty), "\t",
                         encodeTabDelimited(query), "\t",
                         encodeTabDelimited(execURL),
                         Environment.NewLine
@@ -1127,6 +1198,8 @@ $(function() {
                 // Not much to do here. Don't really care to warn the user if it fails.
             }
         }
+
+        #endregion
 
         public bool IsReusable { get { return false; } }
 
@@ -1152,6 +1225,51 @@ $(function() {
                 }
             }
             return sbResult.ToString();
+        }
+
+        static string decodeTabDelimited(string value)
+        {
+            int length = value.Length;
+            StringBuilder sbDecoded = new StringBuilder(length);
+            for (int i = 0; i < length; ++i)
+            {
+                char ch = value[i];
+                if (ch == '\\')
+                {
+                    ++i;
+                    if (i >= length)
+                    {
+                        // throw exception?
+                        break;
+                    }
+                    switch (value[i])
+                    {
+                        case 't': sbDecoded.Append('\t'); break;
+                        case 'n': sbDecoded.Append('\n'); break;
+                        case 'r': sbDecoded.Append('\r'); break;
+                        case '\'': sbDecoded.Append('\''); break;
+                        case '\"': sbDecoded.Append('\"'); break;
+                        case '\\': sbDecoded.Append('\\'); break;
+                        default: break;
+                    }
+                }
+                else sbDecoded.Append(ch);
+            }
+            return sbDecoded.ToString();
+        }
+
+        private static string[] splitTabDelimited(string line)
+        {
+            string[] cols = line.Split('\t');
+            int length = cols.Length;
+            string[] result = new string[length];
+            for (int i = 0; i < length; ++i)
+            {
+                // Treat \0 string as null:
+                if (cols[i] == "\0") result[i] = null;
+                else result[i] = decodeTabDelimited(cols[i]);
+            }
+            return result;
         }
 
         public string QuerySQL(
