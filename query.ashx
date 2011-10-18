@@ -46,35 +46,37 @@ namespace AdHocQuery
             try
             {
                 bool noHeader = false;
+                bool noQuery = false;
                 if (getFormOrQueryValue("no_header") != null) noHeader = true;
+                if (getFormOrQueryValue("no_query") != null) noQuery = true;
 
                 if (String.Equals(getFormOrQueryValue("output"), "json", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row a dictionary object { "column_name1": "value1", ... }
                     // Each column name must be unique or the JSON will be invalid.
-                    renderJSON(req, rsp, JsonOutput.Dictionary, noHeader);
+                    renderJSON(req, rsp, JsonOutput.Dictionary, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "json2", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
                     // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
-                    renderJSON(req, rsp, JsonOutput.KeyValuePair, noHeader);
+                    renderJSON(req, rsp, JsonOutput.KeyValuePair, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "json3", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
                     // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
-                    renderJSON(req, rsp, JsonOutput.Array, noHeader);
+                    renderJSON(req, rsp, JsonOutput.Array, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml", StringComparison.OrdinalIgnoreCase))
                 {
                     // XML with <column name="column_name">value</column>
-                    renderXML(req, rsp, XmlOutput.FixedColumns, noHeader);
+                    renderXML(req, rsp, XmlOutput.FixedColumns, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml2", StringComparison.OrdinalIgnoreCase))
                 {
                     // XML with <column_name>value</column_name>; column_name is scrubbed for XML compliance and produces hard-to-predict element names.
-                    renderXML(req, rsp, XmlOutput.NamedColumns, noHeader);
+                    renderXML(req, rsp, XmlOutput.NamedColumns, noQuery, noHeader);
                 }
                 else
                 {
@@ -626,8 +628,13 @@ $(function() {
             Array
         }
 
-        private void renderJSON(HttpRequest req, HttpResponse rsp, JsonOutput mode, bool noHeader)
+        private void renderJSON(HttpRequest req, HttpResponse rsp, JsonOutput mode, bool noQuery, bool noHeader)
         {
+            rsp.StatusCode = 200;
+            rsp.ContentType = "application/json";
+            rsp.ContentEncoding = Encoding.UTF8;
+            //rsp.BufferOutput = false;
+
             System.IO.TextWriter tw = rsp.Output;
 
             string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
@@ -767,36 +774,70 @@ $(function() {
                 results = "Unknown JSON mode!";
             }
 
-            rsp.StatusCode = 200;
-            rsp.ContentType = "application/json";
-            rsp.ContentEncoding = Encoding.UTF8;
-
             // JSON serialize the output:
-            if (noHeader)
+            if (noQuery)
             {
-                tw.Write(jss.Serialize(new
+                if (noHeader)
                 {
-                    connection_string = cs,
-                    connection_string_name = csname,
-                    query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
-                    query,
-                    time = execTimeMsec,
-                    //header = headers,
-                    results
-                }));
+                    tw.Write(jss.Serialize(new
+                    {
+                        // Probably a security risk?
+                        //connection_string = cs,
+                        //connection_string_name = csname,
+                        // Remove query metadata:
+                        //query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
+                        //query,
+                        time = execTimeMsec,
+                        //header = headers,
+                        results
+                    }));
+                }
+                else
+                {
+                    tw.Write(jss.Serialize(new
+                    {
+                        // Probably a security risk?
+                        //connection_string = cs,
+                        //connection_string_name = csname,
+                        // Remove query metadata:
+                        //query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
+                        //query,
+                        time = execTimeMsec,
+                        header = headers,
+                        results
+                    }));
+                }
             }
             else
             {
-                tw.Write(jss.Serialize(new
+                if (noHeader)
                 {
-                    connection_string = cs,
-                    connection_string_name = csname,
-                    query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
-                    query,
-                    time = execTimeMsec,
-                    header = headers,
-                    results
-                }));
+                    tw.Write(jss.Serialize(new
+                    {
+                        // Probably a security risk?
+                        //connection_string = cs,
+                        //connection_string_name = csname,
+                        query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
+                        query,
+                        time = execTimeMsec,
+                        //header = headers,
+                        results
+                    }));
+                }
+                else
+                {
+                    tw.Write(jss.Serialize(new
+                    {
+                        // Probably a security risk?
+                        //connection_string = cs,
+                        //connection_string_name = csname,
+                        query_parts = new { wi = withCTEidentifier, we = withCTEexpression, select, from, where, groupBy, having, orderBy },
+                        query,
+                        time = execTimeMsec,
+                        header = headers,
+                        results
+                    }));
+                }
             }
         }
 
@@ -806,8 +847,13 @@ $(function() {
             NamedColumns
         }
 
-        private void renderXML(HttpRequest req, HttpResponse rsp, XmlOutput mode, bool noHeader)
+        private void renderXML(HttpRequest req, HttpResponse rsp, XmlOutput mode, bool noQuery, bool noHeader)
         {
+            rsp.StatusCode = 200;
+            rsp.ContentType = "application/xml";
+            rsp.ContentEncoding = Encoding.UTF8;
+            //rsp.BufferOutput = false;
+
             System.IO.TextWriter tw = rsp.Output;
 
             string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
@@ -844,28 +890,29 @@ $(function() {
                 header = null;
             }
 
-            rsp.StatusCode = 200;
-            rsp.ContentType = "application/xml";
-            rsp.ContentEncoding = Encoding.UTF8;
             using (var xw = new System.Xml.XmlTextWriter(tw))
             {
                 xw.WriteStartElement("response");
 
-                xw.WriteElementString("connection_string", cs);
-                xw.WriteElementString("connection_string_name", csname);
+                // Probably a security risk?
+                //xw.WriteElementString("connection_string", cs);
+                //xw.WriteElementString("connection_string_name", csname);
 
-                xw.WriteStartElement("query_parts");
-                xw.WriteElementString("wi", withCTEidentifier);
-                xw.WriteElementString("we", withCTEexpression);
-                xw.WriteElementString("select", select);
-                xw.WriteElementString("from", from);
-                xw.WriteElementString("where", where);
-                xw.WriteElementString("groupBy", groupBy);
-                xw.WriteElementString("having", having);
-                xw.WriteElementString("orderBy", orderBy);
-                xw.WriteEndElement(); // query_parts
+                if (!noQuery)
+                {
+                    xw.WriteStartElement("query_parts");
+                    xw.WriteElementString("wi", withCTEidentifier);
+                    xw.WriteElementString("we", withCTEexpression);
+                    xw.WriteElementString("select", select);
+                    xw.WriteElementString("from", from);
+                    xw.WriteElementString("where", where);
+                    xw.WriteElementString("groupBy", groupBy);
+                    xw.WriteElementString("having", having);
+                    xw.WriteElementString("orderBy", orderBy);
+                    xw.WriteEndElement(); // query_parts
 
-                xw.WriteElementString("query", query);
+                    xw.WriteElementString("query", query);
+                }
 
                 // Handle errors:
                 if (errMessage != null)
