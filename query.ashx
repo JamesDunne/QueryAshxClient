@@ -166,6 +166,7 @@ body
 {
     margin-top: 4px;
     margin-bottom: 4px;
+    font-size: 12px;
 }
 
 a
@@ -272,7 +273,7 @@ div#resultsInner
 
 div#resultsTableDiv
 {
-    clear: left;
+    clear: both;
     max-width: 1280;
     max-height: 30em;
     overflow-x: auto;
@@ -392,7 +393,7 @@ $(function() {
     // Enable buttons:
     $('input:submit, a, button').button();
 
-    var coltypeVisible = true;
+    var coltypeVisible = false;
     $('#toggleColumnTypeHeaders').click(function() {
         // Toggle the visibility of the coltype header cells:
         if (coltypeVisible)
@@ -413,11 +414,6 @@ $(function() {
 //-->
 </script>");
 
-            tw.Write(@"<style>
-.ui-widget .ui-widget {
-  font-size: 0.75em;
-}
-</style>");
             // Start the <body> section:
             tw.Write("</head><body bgcolor='#ffffff' text='#222222' link='#1122cc' vlink='#6611cc' alink='#d14836'>");
 
@@ -559,7 +555,7 @@ $(function() {
                 xml2Uri.Query = xml2Uri.Query.Substring(1) + "&output=xml2";
                 xml2URL = xml2Uri.Uri.ToString();
 
-                tw.Write("<div style='clear: left;'>");
+                tw.Write("<div style='clear: both;'>");
                 // Create a link to share this query with:
                 tw.Write("<a href=\"{0}\" target='_blank'>link</a>", execURL);
                 // Create a link to produce JSON output:
@@ -572,11 +568,13 @@ $(function() {
                 tw.Write("</div>");
 
                 // Timing information:
+                tw.Write("<div style='clear: both;'>");
                 tw.Write("<div style='float: left;'>");
                 tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
                 tw.Write("</div>");
                 tw.Write("<div style='float: right;'>");
-                tw.Write("<button id='toggleColumnTypeHeaders'>Hide Types</button><br/>");
+                tw.Write("<button id='toggleColumnTypeHeaders'>Show Types</button><br/>");
+                tw.Write("</div>");
                 tw.Write("</div>");
 
                 // TABLE output:
@@ -593,7 +591,7 @@ $(function() {
                         tw.Write("<thead><tr><th>Row</th>");
                         for (int h = 0; h <= header.GetUpperBound(0); ++h)
                         {
-                            tw.Write("<th class='colname'>{0}</th><th class='coltype'>{1}</th>", HttpUtility.HtmlEncode(header[h, 0]), HttpUtility.HtmlEncode(header[h, 1]));
+                            tw.Write("<th class='colname' colspan='2'>{0}</th><th class='coltype' style='display: none;'>{1}</th>", HttpUtility.HtmlEncode(header[h, 0]), HttpUtility.HtmlEncode(header[h, 1]));
                         }
                         tw.Write("</tr></thead>\n<tbody>");
                     }
