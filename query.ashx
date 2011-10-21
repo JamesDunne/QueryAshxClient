@@ -324,6 +324,7 @@ td.nullvalue
 th
 {
     background-color: #fda;
+    text-align: left;
 }
 
 th.coltype
@@ -354,7 +355,8 @@ th.coltype
             having = getFormOrQueryValue("having");
             orderBy = getFormOrQueryValue("orderBy");
 
-            bool actionExecute = (String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) || String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase));
+            bool actionExecute = String.Equals(getFormOrQueryValue("action"), "Execute", StringComparison.OrdinalIgnoreCase);
+            bool actionLog = String.Equals(getFormOrQueryValue("action"), "Log", StringComparison.OrdinalIgnoreCase);
 
             // Validate and convert parameters:
             ParameterValue[] parameters;
@@ -395,6 +397,12 @@ th.coltype
 
             string sqlTypesOptionList = javascriptStringEncode(generateOptionList(sqlTypes));
 
+            // Default tab is 'Query':
+            int selectedTabIndex = 0;
+            if (actionExecute && parametersValid) selectedTabIndex = 2;
+            else if (actionLog) selectedTabIndex = 2;
+            else if (message != null) selectedTabIndex = 3;
+
             // Now write out the javascript to allow toggling of show/hide per each query builder row:
             tw.WriteLine(@"<script type=""text/javascript""><!--
 $(function() {
@@ -407,10 +415,10 @@ $(function() {
 
     // Enable the tabbed view:
     $('#tabs').tabs();
-    $('#tabs').tabs('select', " + ((actionExecute && parametersValid) ? "1" : (message != null ? "2" : "0")) + @");
+    $('#tabs').tabs('select', " + selectedTabIndex.ToString() + @");
 
     // Enable buttons:
-    $('input:submit, a, button').button();
+    $('input:submit, a.button, button').button();
 
     // Parameters:
     var removeHandler = function() {
@@ -452,88 +460,98 @@ $(function() {
             // Create the main form wrapper:
             tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
 
+
             // Tabs container:
             tw.Write("<div id='tabs'>");
             tw.Write("<ul>");
-            tw.Write("<li><a href='#tab-builder'>Query Builder</a></li>");
+            tw.Write("<li><a href='#tab-builder'>Query</a></li>");
+            tw.Write("<li><a href='#tab-connections'>Connection</a></li>");
             if (actionExecute && parametersValid) tw.Write("<li><a href='#tab-results'>Results</a></li>");
             tw.Write("<li><a href='#tab-log'>Query Log</a></li>");
-            tw.Write("<li><a href='#tab-self-update'>Self-Updater</a></li>");
+            tw.Write("<li><a href='#tab-self-update'>Update</a></li>");
             tw.Write("</ul>");
 
 
             // Query-builder tab:
-            tw.Write("<div id='tab-builder'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
-            tw.Write("<tr><td>&nbsp;</td><td>");
-            tw.Write("<button id='btnWITH'    >WITH</button>");
-            tw.Write("<button id='btnSELECT' disabled='disabled' >SELECT</button>");
-            tw.Write("<button id='btnFROM'    >FROM</button>");
-            tw.Write("<button id='btnWHERE'   >WHERE</button>");
-            tw.Write("<button id='btnGROUPBY' >GROUP BY</button>");
-            tw.Write("<button id='btnHAVING'  >HAVING</button>");
-            tw.Write("<button id='btnORDERBY' >ORDER BY</button>");
-            tw.Write("</td></tr>");
-            tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
-                HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
-                HttpUtility.HtmlEncode(withCTEexpression),
-                (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
-            );
-            tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
-            tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
-            tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
-            tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
-            tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
-            tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
-            tw.Write("</tbody></table>");
-
-            // Parameters:
-            tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2'>");
-            tw.Write("<caption>Parameters</caption>");
-            tw.Write("<thead><tr><th style='width: 1em;'>&nbsp;</th><th style='width: 10em;'>Name</th><th style='width: 10em;'>Type</th><th style='width: 30em;'>Value</th></tr></thead>");
-            tw.Write("<tbody id='parametersBody'>");
-
-            for (int i = 0; i < parameters.Length; ++i)
             {
-                tw.Write("<tr><td><button class='btnRemove'>-</button></td><td><input type='text' name='pn' value='{0}'></input></td><td><select name='pt'>{1}</select></td><td><input type='text' name='pv' size='60' value='{2}'></input>{3}</td></tr>",
-                    HttpUtility.HtmlAttributeEncode(parameters[i].Name),
-                    generateOptionList(sqlTypes, parameters[i].RawType),
-                    HttpUtility.HtmlAttributeEncode(parameters[i].RawValue),
-                    parameters[i].IsValid ? String.Empty : String.Format("<br/><span class='error'>{0}</span>", HttpUtility.HtmlEncode(parameters[i].ValidationMessage))
+                tw.Write("<div id='tab-builder'>");
+
+                tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
+                tw.Write("<tr><td>&nbsp;</td><td>");
+                tw.Write("<button id='btnWITH'    >WITH</button>");
+                tw.Write("<button id='btnSELECT' disabled='disabled' >SELECT</button>");
+                tw.Write("<button id='btnFROM'    >FROM</button>");
+                tw.Write("<button id='btnWHERE'   >WHERE</button>");
+                tw.Write("<button id='btnGROUPBY' >GROUP BY</button>");
+                tw.Write("<button id='btnHAVING'  >HAVING</button>");
+                tw.Write("<button id='btnORDERBY' >ORDER BY</button>");
+                tw.Write("</td></tr>");
+                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
+                    HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
+                    HttpUtility.HtmlEncode(withCTEexpression),
+                    (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
                 );
+                tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
+                tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
+                tw.Write("</tbody></table>");
+
+                // Parameters:
+                tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2'>");
+                tw.Write("<caption>Parameters</caption>");
+                tw.Write("<thead><tr><th style='width: 1em;'>&nbsp;</th><th style='width: 10em;'>Name</th><th style='width: 10em;'>Type</th><th style='width: 30em;'>Value</th></tr></thead>");
+                tw.Write("<tbody id='parametersBody'>");
+
+                for (int i = 0; i < parameters.Length; ++i)
+                {
+                    tw.Write("<tr><td><button class='btnRemove'>-</button></td><td><input type='text' name='pn' value='{0}'></input></td><td><select name='pt'>{1}</select></td><td><input type='text' name='pv' size='60' value='{2}'></input>{3}</td></tr>",
+                        HttpUtility.HtmlAttributeEncode(parameters[i].Name),
+                        generateOptionList(sqlTypes, parameters[i].RawType),
+                        HttpUtility.HtmlAttributeEncode(parameters[i].RawValue),
+                        parameters[i].IsValid ? String.Empty : String.Format("<br/><span class='error'>{0}</span>", HttpUtility.HtmlEncode(parameters[i].ValidationMessage))
+                    );
+                }
+
+                tw.Write("</tbody>");
+                tw.Write("<tfoot>");
+                tw.Write("<tr><td>&nbsp;</td><td colspan='3'><span style='float: right;'><button id='btnAddParameter'>Add</button></span></td></tr>");
+                tw.Write("</tfoot>");
+                tw.Write("</table>");
+
+                // Execute button:
+                tw.Write("<input type='submit' name='action' value='Execute' />");
+
+                tw.Write("</div>"); // id='tab-builder'
             }
 
-            tw.Write("</tbody>");
-            tw.Write("<tfoot>");
-            tw.Write("<tr><td>&nbsp;</td><td colspan='3'><span style='float: right;'><button id='btnAddParameter'>Add</button></span></td></tr>");
-            tw.Write("</tfoot>");
-            tw.Write("</table>");
-
-            // Execute button:
-            tw.Write("<input type='submit' name='action' value='Execute' />");
 
             // Connection Manager:
-            tw.Write("<div id='connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><caption>SQL Connection</caption><tbody>");
-#if true
-            // Drop-down for named connection strings:
-            tw.Write("<tr><td>Named connection string:</td><td><select name='csname'>");
-            tw.Write("<option value=''{0}>-- Use custom connection string --</option>", String.Equals(csname ?? "", "", StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty);
-            foreach (System.Configuration.ConnectionStringSettings css in System.Configuration.ConfigurationManager.ConnectionStrings)
             {
-                tw.Write("<option value='{0}'{3}>[{1}] -- {2}</option>",
-                    HttpUtility.HtmlAttributeEncode(css.Name),
-                    HttpUtility.HtmlEncode(css.Name),
-                    HttpUtility.HtmlEncode(css.ConnectionString),
-                    String.Equals(csname, css.Name, StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty
-                );
-            }
-            tw.Write("</select></td></tr>");
+                tw.Write("<div id='tab-connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
+#if true
+                // Drop-down for named connection strings:
+                tw.Write("<tr><td>Named connection string:</td><td><select name='csname'>");
+                tw.Write("<option value=''{0}>-- Use custom connection string --</option>", String.Equals(csname ?? "", "", StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty);
+                foreach (System.Configuration.ConnectionStringSettings css in System.Configuration.ConfigurationManager.ConnectionStrings)
+                {
+                    tw.Write("<option value='{0}'{3}>[{1}] -- {2}</option>",
+                        HttpUtility.HtmlAttributeEncode(css.Name),
+                        HttpUtility.HtmlEncode(css.Name),
+                        HttpUtility.HtmlEncode(css.ConnectionString),
+                        String.Equals(csname, css.Name, StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty
+                    );
+                }
+                tw.Write("</select></td></tr>");
 #else
             tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
 #endif
-            tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
-            tw.Write("</tbody></table></div>");
+                tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
+                tw.Write("</tbody></table></div>");
+            }
 
-            tw.Write("</div>"); // id='tab-builder'
 
             // Execution:
             if (actionExecute && parametersValid)
@@ -575,53 +593,25 @@ $(function() {
                 tw.Write("<h3>Results</h3>");
                 tw.Write("<div id='resultsInner'>");
 
-                // Create a UriBuilder based on the current request Uri that overrides the query-string:
-                UriBuilder execUri = new UriBuilder(req.Url);
-                execUri.Query = String.Join("&", (
-                    from key in req.Form.AllKeys.Union(req.QueryString.AllKeys)
-                    let values = getFormOrQueryValues(key)
-                    where values.Any()
-                    where (values.Length > 1) || ((values.Length == 1) && !String.IsNullOrEmpty(values[0]))
-                    from value in values
-                    select HttpUtility.UrlEncode(key) + "=" + HttpUtility.UrlEncode(value)
-                ).ToArray());
-                string execURL = execUri.Uri.ToString();
-
+                string execURL = createURL();
                 logQuery(query, execURL);
 
-                string jsonURL, json2URL, json3URL;
-                string xmlURL, xml2URL;
-
-                UriBuilder jsonUri = new UriBuilder(execUri.Uri);
-                jsonUri.Query = jsonUri.Query.Substring(1) + "&output=json";
-                jsonURL = jsonUri.Uri.ToString();
-
-                UriBuilder json2Uri = new UriBuilder(execUri.Uri);
-                json2Uri.Query = json2Uri.Query.Substring(1) + "&output=json2";
-                json2URL = json2Uri.Uri.ToString();
-
-                UriBuilder json3Uri = new UriBuilder(execUri.Uri);
-                json3Uri.Query = json3Uri.Query.Substring(1) + "&output=json3";
-                json3URL = json3Uri.Uri.ToString();
-
-                UriBuilder xmlUri = new UriBuilder(execUri.Uri);
-                xmlUri.Query = xmlUri.Query.Substring(1) + "&output=xml";
-                xmlURL = xmlUri.Uri.ToString();
-
-                UriBuilder xml2Uri = new UriBuilder(execUri.Uri);
-                xml2Uri.Query = xml2Uri.Query.Substring(1) + "&output=xml2";
-                xml2URL = xml2Uri.Uri.ToString();
+                string jsonURL = createURL("output", "json");
+                string json2URL = createURL("output", "json2");
+                string json3URL = createURL("output", "json3");
+                string xmlURL = createURL("output", "xml");
+                string xml2URL = createURL("output", "xml2");
 
                 tw.Write("<div style='clear: both;'>");
                 // Create a link to share this query with:
-                tw.Write("<a href=\"{0}\" target='_blank'>link</a>", HttpUtility.HtmlAttributeEncode(execURL));
+                tw.Write("<a class=\"button\" href=\"{0}\" target='_blank'>link</a>", HttpUtility.HtmlAttributeEncode(execURL));
                 // Create a link to produce JSON output:
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", HttpUtility.HtmlAttributeEncode(jsonURL));
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", HttpUtility.HtmlAttributeEncode(json2URL));
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", HttpUtility.HtmlAttributeEncode(json3URL));
+                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", HttpUtility.HtmlAttributeEncode(jsonURL));
+                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", HttpUtility.HtmlAttributeEncode(json2URL));
+                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", HttpUtility.HtmlAttributeEncode(json3URL));
                 // Create a link to produce XML output:
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", HttpUtility.HtmlAttributeEncode(xmlURL));
-                tw.Write("&nbsp;<a href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", HttpUtility.HtmlAttributeEncode(xml2URL));
+                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", HttpUtility.HtmlAttributeEncode(xmlURL));
+                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", HttpUtility.HtmlAttributeEncode(xml2URL));
                 tw.Write("</div>");
 
                 // Timing information:
@@ -724,14 +714,15 @@ $(function() {
                 tw.Write("</div>"); // id='tab-results'
             }
 
+
             // Query log tab:
             {
                 tw.Write("<div id='tab-log'>");
 
-                const int pagesize = 10;
+                const int pagesize = 20;
 
                 int pagenumber;
-                if (!Int32.TryParse(getFormOrQueryValue("pn"), out pagenumber))
+                if (!Int32.TryParse(getFormOrQueryValue("pg"), out pagenumber))
                     pagenumber = 1;
                 if (pagenumber < 1) pagenumber = 1;
 
@@ -765,11 +756,38 @@ $(function() {
                     tw.Write("</tr>");
                 }
                 tw.Write("</tbody>");
+                
+                // Generate pager links:
+                tw.Write("<tfoot>");
+                string prevURL = createURL(new KeyValuePair<string, string>("action", "Log"), new KeyValuePair<string, string>("pg", (pagenumber - 1).ToString()));
+                if (pagenumber > 1)
+                    tw.Write("<a href=\"{0}\">", HttpUtility.HtmlAttributeEncode(prevURL));
+                else
+                    tw.Write("<span>");
+                tw.Write("Prev {0}", pagesize);
+                if (pagenumber > 1)
+                    tw.Write("</a>&nbsp;");
+                else
+                    tw.Write("</span>&nbsp;");
+                
+                string nextURL = createURL(new KeyValuePair<string, string>("action", "Log"), new KeyValuePair<string, string>("pg", (pagenumber + 1).ToString()));
+                if (logpage.Count == pagesize)
+                    tw.Write("<a href=\"{0}\">", HttpUtility.HtmlAttributeEncode(nextURL));
+                else
+                    tw.Write("<span>");
+                tw.Write("Next {0}", pagesize);
+                if (logpage.Count == pagesize)
+                    tw.Write("</a>");
+                else
+                    tw.Write("</span>");
+                tw.Write("</tfoot>");
+
                 tw.Write("</table>");
 
             end:
                 tw.Write("</div>"); // id='tab-log'
             }
+
 
             // Self-update tool:
             {
@@ -783,10 +801,66 @@ $(function() {
                 tw.Write("</div>"); // id='tab-self-update'
             }
 
+
             // End:
             tw.Write("</div>"); // id='tabs'
             tw.Write("</form></div>");
+
+            // Footer:
+            tw.Write("<div style='clear: both; float: right;'>");
+            tw.Write("<span>&copy; Copyright 2011, <a href=\"https://github.com/JamesDunne\" target=\"_blank\">James S. Dunne</a></span><br/>");
+            // Donation button:
+            tw.Write("<span style='float: right;'>");
+            tw.Write(@"<form action=""https://www.paypal.com/cgi-bin/webscr"" method=""post"">
+<input type=""hidden"" name=""cmd"" value=""_s-xclick"">
+<input type=""hidden"" name=""encrypted"" value=""-----BEGIN PKCS7-----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-----END PKCS7-----
+"">
+<input type=""image"" src=""https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif"" border=""0"" name=""submit"" alt=""PayPal - The safer, easier way to pay online!"">
+<img alt="""" border=""0"" src=""https://www.paypalobjects.com/en_US/i/scr/pixel.gif"" width=""1"" height=""1"">
+</form>");
+            tw.Write("</span>");
+            tw.Write("<span style='float: right;'>Tip jar:&nbsp;</span>");
+            tw.Write("</div>");
+
             tw.Write("</body></html>");
+        }
+
+        private string createURL(string key, string value)
+        {
+            return createURL(new KeyValuePair<string, string>(key, value));
+        }
+        
+        private string createURL(params KeyValuePair<string, string>[] qvs)
+        {
+            var req = ctx.Request;
+
+            // Create a UriBuilder based on the current request Uri that overrides the query-string:
+            UriBuilder nextUri = new UriBuilder(req.Url);
+
+            var kvpairs = (
+                from key in req.Form.AllKeys.Union(req.QueryString.AllKeys)
+                let values = getFormOrQueryValues(key)
+                where values.Any()
+                where (values.Length > 1) || ((values.Length == 1) && !String.IsNullOrEmpty(values[0]))
+                from value in values
+                select new KeyValuePair<string, string>(key, value)
+            ).ToList();
+
+            // Set new key/value pairs:
+            foreach (var qv in qvs)
+            {
+                int idx = kvpairs.FindIndex(kv => kv.Key == qv.Key);
+                
+                if (idx == -1)
+                    kvpairs.Add(qv);
+                else
+                    kvpairs[idx] = qv;
+            }
+
+            // Rebuild the query string:
+            nextUri.Query = String.Join("&", kvpairs.Select(kv => HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value)).ToArray());
+
+            return nextUri.ToString();
         }
 
         private bool convertParameters(out ParameterValue[] parameters)
