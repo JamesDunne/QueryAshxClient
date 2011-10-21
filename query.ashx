@@ -1377,6 +1377,15 @@ $(function() {
         [System.Diagnostics.Conditional("LogQueries")]
         private void logQuery(string query, string execURL)
         {
+            string hostName = null;
+            try
+            {
+                hostName = System.Net.Dns.GetHostEntry(ctx.Request.UserHostAddress).HostName;
+                int dotidx = hostName.IndexOf('.');
+                if (dotidx != -1) hostName = hostName.Remove(dotidx);
+            }
+            catch (System.Net.Sockets.SocketException) { }
+
             try
             {
                 // Log query to a rolling log file:
@@ -1384,7 +1393,7 @@ $(function() {
                     LogPath,
                     String.Concat(
                         encodeTabDelimited(DateTimeOffset.Now.ToString()), "\t",
-                        encodeTabDelimited(ctx.Request.UserHostName ?? ctx.Request.UserHostAddress ?? String.Empty), "\t",
+                        encodeTabDelimited(hostName ?? ctx.Request.UserHostAddress ?? String.Empty), "\t",
                         encodeTabDelimited(query), "\t",
                         encodeTabDelimited(execURL),
                         Environment.NewLine
