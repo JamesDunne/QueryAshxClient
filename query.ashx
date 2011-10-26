@@ -11,6 +11,7 @@
 // This file was sourced from gist.github.com/1286172
 
 // TODO: add optional TOP(N) clause
+// TODO: AJAX requests for all data
 
 // This changes depending on if attached to a debugger, apparently.
 #define DEBUG
@@ -43,6 +44,13 @@ namespace AdHocQuery
         /// </summary>
         const string LatestVersionURL = "https://raw.github.com/gist/1286172/query.ashx";
 
+        /// <summary>
+        /// SET ROWCOUNT limit for queries.
+        /// </summary>
+        const int defaultRowLimit = 1000;
+
+        private int rowLimit = defaultRowLimit;
+            
         private HttpContext ctx;
 
         public void ProcessRequest(HttpContext ctx)
@@ -63,6 +71,13 @@ namespace AdHocQuery
                 bool noQuery = false;
                 if (getFormOrQueryValue("no_header") != null) noHeader = true;
                 if (getFormOrQueryValue("no_query") != null) noQuery = true;
+                
+                string rowlimitStr = getFormOrQueryValue("rowlimit");
+                if ((rowlimitStr != null) && !Int32.TryParse(rowlimitStr, out rowLimit))
+                {
+                    // If parsing failed, reset the rowLimit to the default:
+                    rowLimit = defaultRowLimit;
+                }
 
                 if (String.Equals(getFormOrQueryValue("output"), "json", StringComparison.OrdinalIgnoreCase))
                 {
@@ -462,14 +477,14 @@ $(function() {
 
 
             // Tabs container:
-            tw.Write("<div id='tabs'>");
+            tw.Write("<div id='tabs'>\n");
             tw.Write("<ul>");
             tw.Write("<li><a href='#tab-builder'>Query</a></li>");
             tw.Write("<li><a href='#tab-connections'>Connection</a></li>");
             if (actionExecute && parametersValid) tw.Write("<li><a href='#tab-results'>Results</a></li>");
             tw.Write("<li><a href='#tab-log'>Query Log</a></li>");
             tw.Write("<li><a href='#tab-self-update'>Update</a></li>");
-            tw.Write("</ul>");
+            tw.Write("</ul>\n");
 
 
             // Query-builder tab:
@@ -524,7 +539,7 @@ $(function() {
                 // Execute button:
                 tw.Write("<input type='submit' name='action' value='Execute' />");
 
-                tw.Write("</div>"); // id='tab-builder'
+                tw.Write("</div>\n"); // id='tab-builder'
             }
 
 
@@ -549,7 +564,7 @@ $(function() {
             tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
 #endif
                 tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
-                tw.Write("</tbody></table></div>");
+                tw.Write("</tbody></table></div>\n");
             }
 
 
@@ -616,7 +631,8 @@ $(function() {
 
                 // Timing information:
                 tw.Write("<div style='clear: both;'>");
-                tw.Write("<div style='float: left;'>");
+                tw.Write("<div style='float: left; margin-top: 1em'>");
+                tw.Write("<strong>ROWCOUNT limit:</strong>&nbsp;{0}<br/>", rowLimit);
                 tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
                 tw.Write("</div>");
                 tw.Write("<div style='float: right;'>");
@@ -706,12 +722,15 @@ $(function() {
 
                     tw.Write("</tr>\n");
                 } // foreach (IEnumerable<object> row in rows)
-                tw.Write("</tbody>\n</table>");
+
+                tw.Write("</tbody>\n");
+                tw.Write("</table>");
+
                 tw.Write("</div>"); // id='resultsTableDiv'
                 tw.Write("</div></div>");
 
             end:
-                tw.Write("</div>"); // id='tab-results'
+                tw.Write("</div>\n"); // id='tab-results'
             }
 
 
@@ -753,9 +772,9 @@ $(function() {
                         HttpUtility.HtmlEncode(row[2]),
                         HttpUtility.HtmlAttributeEncode(row[3])
                     );
-                    tw.Write("</tr>");
+                    tw.Write("</tr>\n");
                 }
-                tw.Write("</tbody>");
+                tw.Write("</tbody>\n");
                 
                 // Generate pager links:
                 tw.Write("<tfoot>");
@@ -780,12 +799,12 @@ $(function() {
                     tw.Write("</a>");
                 else
                     tw.Write("</span>");
-                tw.Write("</tfoot>");
+                tw.Write("</tfoot>\n");
 
                 tw.Write("</table>");
 
             end:
-                tw.Write("</div>"); // id='tab-log'
+                tw.Write("</div>\n"); // id='tab-log'
             }
 
 
@@ -798,12 +817,12 @@ $(function() {
                 {
                     tw.Write("<br/><strong>{0}</strong>", HttpUtility.HtmlEncode(message));
                 }
-                tw.Write("</div>"); // id='tab-self-update'
+                tw.Write("</div>\n"); // id='tab-self-update'
             }
 
 
             // End:
-            tw.Write("</div>"); // id='tabs'
+            tw.Write("</div>\n"); // id='tabs'
             tw.Write("</form></div>");
 
             // Footer:
@@ -820,7 +839,7 @@ $(function() {
 </form>");
             tw.Write("</span>");
             tw.Write("<span style='float: right;'>Tip jar:&nbsp;</span>");
-            tw.Write("</div>");
+            tw.Write("</div>\n");
 
             tw.Write("</body></html>");
         }
@@ -1684,6 +1703,9 @@ $(function() {
                 // Set the TRANSACTION ISOLATION LEVEL to READ UNCOMMITTED so that we don't block any application queries:
                 var tmpcmd = conn.CreateCommand();
                 tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
+                tmpcmd.ExecuteNonQuery();
+
+                tmpcmd.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
                 tmpcmd.ExecuteNonQuery();
 
                 // Time the execution and grab the SqlDataReader:
