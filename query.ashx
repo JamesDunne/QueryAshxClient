@@ -23,6 +23,10 @@
 // Enable logging of queries to ~/query.ashx.log
 #define LogQueries
 
+// Enable tip-jar and credits
+//#define TipJar
+#define Credits
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -668,7 +672,7 @@ $(function() {
                             object col = rowen.Current;
 
                             string align = null;
-                            bool isNobr = false;
+                            bool isNobr = false, pre = false;
                             string tdclass = null;
 
                             // Use the SQL type to determine column alignment:
@@ -677,6 +681,17 @@ $(function() {
                                 align = "right";
                             else if (sqltype == "datetime" || sqltype == "datetimeoffset" || sqltype == "datetime2")
                                 isNobr = true;
+                            else if (sqltype == "char")
+                                pre = true;
+
+                            // Allow request variables to override certain column formattings:
+                            string q;
+                            q = req[String.Format("_c{0}pre", colnum)];
+                            if (q != null) pre = (q == "1");
+                            q = req[String.Format("_c{0}align", colnum)];
+                            if (q != null) align = q;
+                            q = req[String.Format("_c{0}nobr", colnum)];
+                            if (q != null) isNobr = (q == "1");
 
                             string colvalue;
                             if ((col == null) || (col == DBNull.Value))
@@ -702,9 +717,17 @@ $(function() {
                                     var tc = System.ComponentModel.TypeDescriptor.GetConverter(ctype);
                                     colvalue = tc.ConvertToString(col);
 
+                                    bool containsNewLines = (colvalue.IndexOfAny(new char[] { '\r', '\n' }) >= 0);
+
+                                    colvalue = HttpUtility.HtmlEncode(colvalue);
+
                                     // Use a <nobr> around short-enough columns that include word-breaking chars.
-                                    if ((colvalue.Length <= 60) && !(colvalue.IndexOfAny(new char[] { '\r', '\n' }) >= 0))
+                                    if ((colvalue.Length <= 60) && !containsNewLines)
                                         isNobr = true;
+                                    
+                                    // Convert '\n' to "<br/>":
+                                    if (containsNewLines)
+                                        colvalue = colvalue.Replace("\r", String.Empty).Replace("\n", "<br/>");
                                 }
                             }
 
@@ -715,7 +738,7 @@ $(function() {
                             if (tdclass != null) attrs += " class='" + tdclass + "'";
                             if (align != null) attrs += " style='text-align: " + align + ";'";
                             if (isNobr) { wrapperElementStart += "<nobr>"; wrapperElementEnd = "</nobr>" + wrapperElementEnd; }
-                            if (sqltype == "char") { wrapperElementStart += "<pre>"; wrapperElementEnd = "</pre>" + wrapperElementEnd; }
+                            if (pre) { wrapperElementStart += "<pre>"; wrapperElementEnd = "</pre>" + wrapperElementEnd; }
 
                             tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", HttpUtility.HtmlEncode(colvalue), attrs, wrapperElementStart, wrapperElementEnd);
                         } // foreach (object col in row)
@@ -827,7 +850,10 @@ $(function() {
 
             // Footer:
             tw.Write("<div style='clear: both; float: right;'>");
+#if Credits
             tw.Write("<span>&copy; Copyright 2011, <a href=\"https://github.com/JamesDunne\" target=\"_blank\">James S. Dunne</a></span><br/>");
+#endif
+#if TipJar
             // Tip jar!
             tw.Write("<span style='float: right;'>");
             tw.Write(@"<form action=""https://www.paypal.com/cgi-bin/webscr"" method=""post"">
@@ -839,6 +865,7 @@ $(function() {
 </form>");
             tw.Write("</span>");
             tw.Write("<span style='float: right;'>Tip jar:&nbsp;</span>");
+#endif
             tw.Write("</div>\n");
 
             tw.Write("</body></html>");
