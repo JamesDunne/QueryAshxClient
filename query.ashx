@@ -612,14 +612,15 @@ $(function() {
                 tw.Write("<h3>Results</h3>");
                 tw.Write("<div id='resultsInner'>");
 
-                string execURL = createURL();
+                // Log the full absolute URL with host and path:
+                string execURL = createURL().ToString();
                 logQuery(query, execURL);
 
-                string jsonURL = createURL("output", "json");
-                string json2URL = createURL("output", "json2");
-                string json3URL = createURL("output", "json3");
-                string xmlURL = createURL("output", "xml");
-                string xml2URL = createURL("output", "xml2");
+                string jsonURL = createURL("output", "json").ToString();
+                string json2URL = createURL("output", "json2").ToString();
+                string json3URL = createURL("output", "json3").ToString();
+                string xmlURL = createURL("output", "xml").ToString();
+                string xml2URL = createURL("output", "xml2").ToString();
 
                 tw.Write("<div style='clear: both;'>");
                 // Create a link to share this query with:
@@ -788,12 +789,24 @@ $(function() {
                 tw.Write("<tbody>");
                 foreach (string[] row in logpage)
                 {
+                    // Parse the URL stored in the log and just render the link as self-relative. Only the query-string is important.
+                    Uri execUrl;
+                    string goUrl;
+                    if (Uri.TryCreate(row[3], UriKind.Absolute, out execUrl))
+                    {
+                        goUrl = execUrl.PathAndQuery;
+                    }
+                    else
+                    {
+                        goUrl = row[3];
+                    }
+
                     tw.Write("<tr>");
                     tw.Write("<td>{0}</td><td>{1}</td><td><a href=\"{3}\">GO</a></td><td><nobr><pre>{2}</pre></nobr></td>",
                         HttpUtility.HtmlEncode(row[0]),
                         HttpUtility.HtmlEncode(row[1]),
                         HttpUtility.HtmlEncode(row[2]),
-                        HttpUtility.HtmlAttributeEncode(row[3])
+                        HttpUtility.HtmlAttributeEncode(goUrl)
                     );
                     tw.Write("</tr>\n");
                 }
@@ -801,7 +814,7 @@ $(function() {
                 
                 // Generate pager links:
                 tw.Write("<tfoot>");
-                string prevURL = createURL(new KeyValuePair<string, string>("action", "Log"), new KeyValuePair<string, string>("pg", (pagenumber - 1).ToString()));
+                string prevURL = createURL(new KeyValuePair<string, string>("action", "Log"), new KeyValuePair<string, string>("pg", (pagenumber - 1).ToString())).ToString();
                 if (pagenumber > 1)
                     tw.Write("<a href=\"{0}\">", HttpUtility.HtmlAttributeEncode(prevURL));
                 else
@@ -811,8 +824,8 @@ $(function() {
                     tw.Write("</a>&nbsp;");
                 else
                     tw.Write("</span>&nbsp;");
-                
-                string nextURL = createURL(new KeyValuePair<string, string>("action", "Log"), new KeyValuePair<string, string>("pg", (pagenumber + 1).ToString()));
+
+                string nextURL = createURL(new KeyValuePair<string, string>("action", "Log"), new KeyValuePair<string, string>("pg", (pagenumber + 1).ToString())).ToString();
                 if (logpage.Count == pagesize)
                     tw.Write("<a href=\"{0}\">", HttpUtility.HtmlAttributeEncode(nextURL));
                 else
@@ -871,12 +884,12 @@ $(function() {
             tw.Write("</body></html>");
         }
 
-        private string createURL(string key, string value)
+        private Uri createURL(string key, string value)
         {
             return createURL(new KeyValuePair<string, string>(key, value));
         }
         
-        private string createURL(params KeyValuePair<string, string>[] qvs)
+        private Uri createURL(params KeyValuePair<string, string>[] qvs)
         {
             var req = ctx.Request;
 
@@ -906,7 +919,7 @@ $(function() {
             // Rebuild the query string:
             nextUri.Query = String.Join("&", kvpairs.Select(kv => HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value)).ToArray());
 
-            return nextUri.ToString();
+            return nextUri.Uri;
         }
 
         private bool convertParameters(out ParameterValue[] parameters)
