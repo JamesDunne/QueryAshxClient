@@ -1427,8 +1427,14 @@ $(function() {
             try
             {
                 hostName = System.Net.Dns.GetHostEntry(ctx.Request.UserHostAddress).HostName;
-                int dotidx = hostName.IndexOf('.');
-                if (dotidx != -1) hostName = hostName.Remove(dotidx);
+                
+                // If the hostname is not an IP address, remove the trailing domain names to get just the local machine name:
+                System.Net.IPAddress addr;
+                if (!System.Net.IPAddress.TryParse(hostName, out addr))
+                {
+                    int dotidx = hostName.IndexOf('.');
+                    if (dotidx != -1) hostName = hostName.Remove(dotidx);
+                }
             }
             catch (System.Net.Sockets.SocketException) { }
 
