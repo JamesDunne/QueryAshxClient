@@ -54,7 +54,7 @@ namespace AdHocQuery
         const int defaultRowLimit = 1000;
 
         private int rowLimit = defaultRowLimit;
-            
+
         private HttpContext ctx;
 
         public void ProcessRequest(HttpContext ctx)
@@ -75,7 +75,7 @@ namespace AdHocQuery
                 bool noQuery = false;
                 if (getFormOrQueryValue("no_header") != null) noHeader = true;
                 if (getFormOrQueryValue("no_query") != null) noQuery = true;
-                
+
                 string rowlimitStr = getFormOrQueryValue("rowlimit");
                 if ((rowlimitStr != null) && !Int32.TryParse(rowlimitStr, out rowLimit))
                 {
@@ -709,7 +709,7 @@ $(function() {
                                 {
                                     // Display byte[] as 0xHEXCHARS:
                                     byte[] bytes = (byte[])col;
-                                    colvalue = toHexString(bytes);
+                                    colvalue = HttpUtility.HtmlEncode(toHexString(bytes));
                                     tdclass = "hexvalue";
                                 }
                                 else
@@ -725,7 +725,7 @@ $(function() {
                                     // Use a <nobr> around short-enough columns that include word-breaking chars.
                                     if ((colvalue.Length <= 60) && !containsNewLines)
                                         isNobr = true;
-                                    
+
                                     // Convert '\n' to "<br/>":
                                     if (containsNewLines)
                                         colvalue = colvalue.Replace("\r", String.Empty).Replace("\n", "<br/>");
@@ -741,7 +741,8 @@ $(function() {
                             if (isNobr) { wrapperElementStart += "<nobr>"; wrapperElementEnd = "</nobr>" + wrapperElementEnd; }
                             if (pre) { wrapperElementStart += "<pre>"; wrapperElementEnd = "</pre>" + wrapperElementEnd; }
 
-                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", HttpUtility.HtmlEncode(colvalue), attrs, wrapperElementStart, wrapperElementEnd);
+                            // NOTE: colvalue is HTML-encoded.
+                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", colvalue, attrs, wrapperElementStart, wrapperElementEnd);
                         } // foreach (object col in row)
 
                     tw.Write("</tr>\n");
@@ -811,7 +812,7 @@ $(function() {
                     tw.Write("</tr>\n");
                 }
                 tw.Write("</tbody>\n");
-                
+
                 // Generate pager links:
                 tw.Write("<tfoot>");
                 string prevURL = createURL(new KeyValuePair<string, string>("action", "Log"), new KeyValuePair<string, string>("pg", (pagenumber - 1).ToString())).ToString();
@@ -888,7 +889,7 @@ $(function() {
         {
             return createURL(new KeyValuePair<string, string>(key, value));
         }
-        
+
         private Uri createURL(params KeyValuePair<string, string>[] qvs)
         {
             var req = ctx.Request;
@@ -909,7 +910,7 @@ $(function() {
             foreach (var qv in qvs)
             {
                 int idx = kvpairs.FindIndex(kv => kv.Key == qv.Key);
-                
+
                 if (idx == -1)
                     kvpairs.Add(qv);
                 else
@@ -1440,7 +1441,7 @@ $(function() {
             try
             {
                 hostName = System.Net.Dns.GetHostEntry(ctx.Request.UserHostAddress).HostName;
-                
+
                 // If the hostname is not an IP address, remove the trailing domain names to get just the local machine name:
                 System.Net.IPAddress addr;
                 if (!System.Net.IPAddress.TryParse(hostName, out addr))
