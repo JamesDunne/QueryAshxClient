@@ -18,7 +18,7 @@
 //#undef DEBUG
 
 // Enable when disconnected and/or cannot access 'ajax.googleapis.com'
-//#define Local
+#define Local
 
 // Enable logging of queries to ~/query.ashx.log
 #define LogQueries
@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Web;
 using System.Xml.Serialization;
@@ -53,19 +54,41 @@ namespace AdHocQuery
         /// </summary>
         const int defaultRowLimit = 1000;
 
+        private static readonly string[] defaultAuthorizedPublicKeys = new string[] {
+            @"AAAAA3JzYQAAAAEjAAAAgK7Nu+KxnCCe+VVIQvCIXe1jqT9YcfYek1Y42HAAJiVuiTLV9Ng4cR8vc5bI2aui1aAkMrajYoP/vfLM8Fu82n1P8ufvmuQ3BoJbuWtfJUcz9216Z+TvOjZq4dtX9AZB6dYa8vnwqcaiDbkaXE06ODjwqfWgqqc+KWaHLpYNosEv"
+        };
+
         private int rowLimit = defaultRowLimit;
 
         private HttpContext ctx;
+        private HttpRequest req;
+        private HttpResponse rsp;
 
         public void ProcessRequest(HttpContext ctx)
         {
             this.ctx = ctx;
-            HttpRequest req = ctx.Request;
-            HttpResponse rsp = ctx.Response;
+            req = ctx.Request;
+            rsp = ctx.Response;
 
+            // Special tool modes:
             if (getFormOrQueryValue("self-update") != null)
             {
-                selfUpdate(req, rsp);
+                selfUpdate();
+                return;
+            }
+            else if (getFormOrQueryValue("mu") == "0")
+            {
+                modifyCommit(false);
+                return;
+            }
+            else if (getFormOrQueryValue("mu") == "1")
+            {
+                modifyCommit(true);
+                return;
+            }
+            else if (getFormOrQueryValue("ap") != null)
+            {
+                addPublicKey();
                 return;
             }
 
@@ -87,33 +110,33 @@ namespace AdHocQuery
                 {
                     // JSON with each row a dictionary object { "column_name1": "value1", ... }
                     // Each column name must be unique or the JSON will be invalid.
-                    renderJSON(req, rsp, JsonOutput.Dictionary, noQuery, noHeader);
+                    renderJSON(JsonOutput.Dictionary, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "json2", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
                     // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
-                    renderJSON(req, rsp, JsonOutput.KeyValuePair, noQuery, noHeader);
+                    renderJSON(JsonOutput.KeyValuePair, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "json3", StringComparison.OrdinalIgnoreCase))
                 {
                     // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
                     // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
-                    renderJSON(req, rsp, JsonOutput.Array, noQuery, noHeader);
+                    renderJSON(JsonOutput.Array, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml", StringComparison.OrdinalIgnoreCase))
                 {
                     // XML with <column name="column_name">value</column>
-                    renderXML(req, rsp, XmlOutput.FixedColumns, noQuery, noHeader);
+                    renderXML(XmlOutput.FixedColumns, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml2", StringComparison.OrdinalIgnoreCase))
                 {
                     // XML with <column_name>value</column_name>; column_name is scrubbed for XML compliance and produces hard-to-predict element names.
-                    renderXML(req, rsp, XmlOutput.NamedColumns, noQuery, noHeader);
+                    renderXML(XmlOutput.NamedColumns, noQuery, noHeader);
                 }
                 else
                 {
-                    renderHTMLUI(req, rsp);
+                    renderHTMLUI();
                 }
             }
             catch (Exception ex)
@@ -126,7 +149,7 @@ namespace AdHocQuery
             }
         }
 
-        private void selfUpdate(HttpRequest req, HttpResponse rsp)
+        private void selfUpdate()
         {
             string updateAppRelPath = req.AppRelativeCurrentExecutionFilePath;
             string updateAbsPath = ctx.Server.MapPath(updateAppRelPath);
@@ -176,7 +199,7 @@ namespace AdHocQuery
 
         private readonly string[] sqlTypes = new string[] { "int", "bit", "varchar", "nvarchar", "char", "nchar", "datetime", "datetime2", "datetimeoffset", "decimal", "money" };
 
-        private void renderHTMLUI(HttpRequest req, HttpResponse rsp)
+        private void renderHTMLUI()
         {
             rsp.StatusCode = 200;
             rsp.ContentType = "text/html";
@@ -991,7 +1014,7 @@ $(function() {
             Array
         }
 
-        private void renderJSON(HttpRequest req, HttpResponse rsp, JsonOutput mode, bool noQuery, bool noHeader)
+        private void renderJSON(JsonOutput mode, bool noQuery, bool noHeader)
         {
             rsp.StatusCode = 200;
             rsp.ContentType = "application/json";
@@ -1071,11 +1094,18 @@ $(function() {
             if (errMessage != null)
             {
                 final.Add("error", errMessage);
-
                 tw.Write(jss.Serialize(final));
                 return;
             }
 
+            final.Add("time", execTimeMsec);
+            getJSONDictionary(final, mode, noQuery, noHeader, header, rows);
+
+            tw.Write(jss.Serialize(final));
+        }
+
+        private void getJSONDictionary(Dictionary<string, object> final, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
+        {
             // Convert the header string[,] to { name, type }[]:
             List<object> headers = new List<object>(header.GetUpperBound(0) + 1);
             string[] uniqname = new string[header.GetUpperBound(0) + 1];
@@ -1105,7 +1135,6 @@ $(function() {
             {
                 final.Add("header", headers);
             }
-            final.Add("time", execTimeMsec);
 
             // Convert each result row:
             object results;
@@ -1178,8 +1207,6 @@ $(function() {
             }
 
             final.Add("results", results);
-
-            tw.Write(jss.Serialize(final));
         }
 
         private enum XmlOutput
@@ -1188,7 +1215,7 @@ $(function() {
             NamedColumns
         }
 
-        private void renderXML(HttpRequest req, HttpResponse rsp, XmlOutput mode, bool noQuery, bool noHeader)
+        private void renderXML(XmlOutput mode, bool noQuery, bool noHeader)
         {
             rsp.StatusCode = 200;
             rsp.ContentType = "application/xml";
@@ -1413,6 +1440,374 @@ $(function() {
 
             return sb.ToString();
         }
+
+        private void errorResponse(int statusCode, string messageFormat, params object[] args)
+        {
+            rsp.Clear();
+            rsp.StatusCode = statusCode;
+            rsp.ContentType = "text/html";
+            rsp.Write(HttpUtility.HtmlEncode(String.Format(messageFormat, args)));
+        }
+
+        // Handle data modification commands securely.
+        private void modifyCommit(bool doCommit)
+        {
+            if (!String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
+            {
+                errorResponse(405, "POST method expected");
+                return;
+            }
+
+            // Grab the user's public key and the signed (encrypted) query command:
+            string pubkey64 = cleanBase64(req.Form["p"]);
+            string signed64 = cleanBase64(req.Form["s"]);
+            string cmd = req.Form["c"];
+            string query = req.Form["q"];
+            string connString = getFormOrQueryValue("cs");
+
+            // `pubkey` is BASE64 serialized public key:
+            if (!isKeyAuthorized(pubkey64))
+            {
+                errorResponse(403, "Public key '{0}' not authorized", pubkey64);
+                return;
+            }
+
+            // All fields are required input:
+            if (String.IsNullOrEmpty(pubkey64)
+             || String.IsNullOrEmpty(signed64)
+             || String.IsNullOrEmpty(cmd)
+             || String.IsNullOrEmpty(query)
+             || String.IsNullOrEmpty(connString))
+            {
+                errorResponse(403, "A required input field is missing");
+                return;
+            }
+
+            // Client's public key is an authorized user.
+            RSAParameters clientpubkey = pubkeyFromBase64(pubkey64);
+
+            // Verify the signed data:
+            byte[] signed = Convert.FromBase64String(signed64);
+            byte[] verification = Encoding.UTF8.GetBytes(cmd + "\n" + query);
+            if (!verifySignedHashWithKey(verification, signed, clientpubkey))
+            {
+                errorResponse(403, "Public key could not be verified against signed data");
+                return;
+            }
+
+            // Client is now verified to hold the private key paired with the public key they gave us.
+
+            // NOTE: allowing any data modification command except DDL statements
+            cmd = stripSQLComments(cmd);
+            if (containsSQLkeywords(cmd, "commit", "rollback", "create", "drop", "begin"))
+            {
+                errorResponse(403, "Command contains restricted keywords");
+                return;
+            }
+
+            // NOTE: assuming a SELECT query
+            query = stripSQLComments(query);
+            if (containsSQLkeywords(query, "commit", "rollback", "delete", "insert", "update", "create", "drop", "into"))
+            {
+                errorResponse(403, "Query contains restricted keywords");
+                return;
+            }
+
+            // Build the SQL command to execute:
+            string cmdtext =
+@"BEGIN TRAN
+
+" + cmd + @";
+
+" + query + @";
+
+" + (doCommit ? "COMMIT TRAN" : "ROLLBACK TRAN");
+
+            Exception error;
+            string[,] header;
+            IEnumerable<IEnumerable<object>> results;
+
+            var final = new Dictionary<string, object>();
+
+            // Execute the command:
+            bool execSuccess = executeQuery(connString, cmdtext, out header, out results, out error);
+
+            // Render the results to JSON:
+
+            if (!execSuccess)
+            {
+                rsp.StatusCode = 500;
+                if (error is System.Data.SqlClient.SqlException)
+                {
+                    // Detailed SQL logging to JSON:
+                    System.Data.SqlClient.SqlException sqex = (System.Data.SqlClient.SqlException)error;
+                    final.Add("error", new Dictionary<string, object>
+                    {
+                        { "message",    sqex.Message },
+                        { "line",       sqex.LineNumber },
+                        { "server",     sqex.Server },
+                        { "procedure",  sqex.Procedure },
+                        { "code",       "0x" + String.Join("", BitConverter.GetBytes(unchecked((uint)sqex.ErrorCode)).Reverse().Select(b => b.ToString("X2")).ToArray()) },
+                        { "class",      (int)sqex.Class },
+                        { "number",     sqex.Number },
+                        { "state",      (int)sqex.State },
+                    });
+                }
+                else
+                    // Default error handling:
+                    final.Add("error", new Dictionary<string, object>
+                    {
+                        { "message",    error.Message }
+                    });
+            }
+            else
+            {
+                rsp.StatusCode = 200;
+                final.Add("command", cmdtext);
+                getJSONDictionary(final, JsonOutput.KeyValuePair, true, false, header, results);
+            }
+
+            // Serialize the dictionary to JSON:
+            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+            string json = jss.Serialize(final);
+
+            // Write the response:
+            rsp.ContentType = "application/json";
+            rsp.ContentEncoding = Encoding.UTF8;
+            rsp.Output.Write(json);
+        }
+
+        // Adds a new public key to the authorized keys file.
+        private void addPublicKey()
+        {
+            if (!String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
+            {
+                errorResponse(405, "POST method expected");
+                return;
+            }
+
+            // Grab the user's public key and the signed (encrypted) query command:
+            string pubkey64 = cleanBase64(req.Form["p"]);
+            string signed64 = cleanBase64(req.Form["s"]);
+            string newpubkey64 = cleanBase64(req.Form["n"]);
+
+            // `pubkey` is BASE64 serialized public key:
+            if (!isKeyAuthorized(pubkey64))
+            {
+                errorResponse(403, "Public key '{0}' not authorized", pubkey64);
+                return;
+            }
+
+            // All fields are required input:
+            if (String.IsNullOrEmpty(pubkey64)
+             || String.IsNullOrEmpty(signed64)
+             || String.IsNullOrEmpty(newpubkey64))
+            {
+                errorResponse(403, "A required input field is missing");
+                return;
+            }
+
+            // Validate that the new public key is RSA:
+            try
+            {
+                RSAParameters tmp = pubkeyFromBase64(newpubkey64);
+            }
+            catch (ArgumentException aex)
+            {
+                errorResponse(403, aex.Message);
+                return;
+            }
+
+            // Client's public key is an authorized user.
+            RSAParameters clientpubkey = pubkeyFromBase64(pubkey64);
+
+            // Verify the signed data:
+            byte[] signed = Convert.FromBase64String(signed64);
+            byte[] newpubkey = Convert.FromBase64String(newpubkey64);
+            if (!verifySignedHashWithKey(newpubkey, signed, clientpubkey))
+            {
+                errorResponse(403, "Public key could not be verified against signed data");
+                return;
+            }
+
+            // Client is now verified to hold the private key paired with the public key they gave us.
+
+            // Add the new public key to the authorized keys file if it doesn't already exist:
+            string status = addKeyToAuthorizedFile(newpubkey64);
+
+            rsp.StatusCode = 200;
+            rsp.Output.Write("Authorizing public key '{0}': {1}", newpubkey64, status);
+        }
+
+        private static bool executeQuery(string connString, string query, out string[,] header, out IEnumerable<IEnumerable<object>> results, out Exception error)
+        {
+            // Open a connection and execute the command:
+            var conn = new System.Data.SqlClient.SqlConnection(connString);
+            var cmd = conn.CreateCommand();
+            System.Data.SqlClient.SqlDataReader dr;
+
+            try
+            {
+                conn.Open();
+
+                cmd.CommandText = query;
+                cmd.CommandType = System.Data.CommandType.Text;
+                cmd.CommandTimeout = 360;   // seconds
+
+                // Open a data reader to read the results:
+                dr = cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
+            }
+            catch (Exception ex)
+            {
+                conn.Close();
+                cmd.Dispose();
+
+                // Set the exception and failed return:
+                header = null;
+                results = null;
+                error = ex;
+                return false;
+            }
+
+            // Get the header column names/types:
+            header = getHeader(dr);
+            // Get an enumerator over the results:
+            results = enumerateResults(conn, cmd, dr);
+
+            // Successful return:
+            error = null;
+            return true;
+        }
+
+        #region Encryption utilities
+
+        private static string cleanBase64(string base64)
+        {
+            // Remove all whitespace:
+            return base64.Replace("\n", "").Replace("\r", "").Replace(" ", "").Replace("\t", "").Trim();
+        }
+
+        private string KeysPath { get { return ctx.Server.MapPath(ctx.Request.AppRelativeCurrentExecutionFilePath + ".keys"); } }
+
+        private bool isKeyAuthorized(string pubkeyBase64)
+        {
+            string[] authKeys = defaultAuthorizedPublicKeys;
+            if (System.IO.File.Exists(KeysPath))
+            {
+                authKeys = authKeys.Concat(
+                    from line in System.IO.File.ReadAllLines(KeysPath, Encoding.ASCII)
+                    where !String.IsNullOrEmpty(line)
+                    select line
+                ).ToArray();
+            }
+            return authKeys.Contains(pubkeyBase64);
+        }
+
+        private string addKeyToAuthorizedFile(string newpubkey64)
+        {
+            string[] authKeys = defaultAuthorizedPublicKeys;
+            if (System.IO.File.Exists(KeysPath))
+            {
+                authKeys = authKeys.Concat(
+                    from line in System.IO.File.ReadAllLines(KeysPath, Encoding.ASCII)
+                    where !String.IsNullOrEmpty(line)
+                    select line
+                ).ToArray();
+            }
+            // If the key is already authorized, don't add it again:
+            if (authKeys.Contains(newpubkey64))
+            {
+                return "Key is already authorized";
+            }
+
+            using (var appender = System.IO.File.AppendText(KeysPath))
+            {
+                appender.WriteLine(newpubkey64);
+            }
+
+            return "Key successfully added";
+        }
+
+        private static byte[] itobNetwork(int i)
+        {
+            return BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(i));
+        }
+
+        private static int btoiNetwork(byte[] b, int startIndex)
+        {
+            return System.Net.IPAddress.NetworkToHostOrder(BitConverter.ToInt32(b, startIndex));
+        }
+
+        private static RSAParameters pubkeyFromBase64(string base64)
+        {
+            // OpenSSL standard of deserializing a public key from BASE64
+            byte[] raw = Convert.FromBase64String(base64);
+            if (raw.Length < 4 + 3 + 4 + 1 + 4 + 1) throw new ArgumentException("Invalid public key format; size is too small.");
+
+            int keytypelen = btoiNetwork(raw, 0);
+            if (keytypelen != 3 && keytypelen != 7) throw new ArgumentException("Invalid public key format; it must be an RSA key stored in OpenSSL format.");
+
+            string keytype = Encoding.ASCII.GetString(raw, 4, keytypelen);
+            if (keytype != "rsa" && keytype != "ssh-rsa") throw new ArgumentException("Invalid public key format; key type must be either 'rsa' or 'ssh-rsa'.");
+
+            int explen = btoiNetwork(raw, 4 + keytypelen);
+            if (explen > 8192) throw new ArgumentException("Invalid public key format; RSA exponent length too long.");
+
+            int modlen = btoiNetwork(raw, 4 + keytypelen + 4 + explen);
+            if (modlen > 8192) throw new ArgumentException("Invalid public key format; RSA modulus length too long.");
+
+            RSAParameters key = new RSAParameters() { Exponent = new byte[explen], Modulus = new byte[modlen] };
+            Array.Copy(raw, 4 + keytypelen + 4, key.Exponent, 0, explen);
+            Array.Copy(raw, 4 + keytypelen + 4 + explen + 4, key.Modulus, 0, modlen);
+            return key;
+        }
+
+        private static byte[] signDataWithKey(byte[] toSign, RSAParameters key)
+        {
+            try
+            {
+                using (var rsa = new RSACryptoServiceProvider())
+                {
+                    // Import the given key:
+                    rsa.ImportParameters(key);
+
+                    return rsa.SignData(toSign, new SHA1CryptoServiceProvider());
+                }
+            }
+            catch (CryptographicException)
+            {
+                return null;
+            }
+        }
+
+        private static bool verifySignedHashWithKey(byte[] toVerify, byte[] signedData, RSAParameters key)
+        {
+            try
+            {
+                using (var rsa = new RSACryptoServiceProvider())
+                {
+                    rsa.ImportParameters(key);
+
+                    return rsa.VerifyData(toVerify, new SHA1CryptoServiceProvider(), signedData);
+                }
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+        }
+
+        private static RSAParameters generateKey()
+        {
+            // Create a new key-pair automatically:
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                // Export the generated key:
+                return rsa.ExportParameters(true);
+            }
+        }
+
+        #endregion
 
         #region Logging
 
@@ -1771,30 +2166,30 @@ $(function() {
             }
 
             // Generate the header:
-            int fieldCount = dr.FieldCount;
-
-#if false
-            header = new string[fieldCount][];
-            for (int i = 0; i < fieldCount; ++i)
-            {
-                header[i] = new string[2] { dr.GetName(i), formatSQLtype(dr, i) };
-            }
-#else
-            header = new string[fieldCount, 2];
-            for (int i = 0; i < fieldCount; ++i)
-            {
-                header[i, 0] = dr.GetName(i);
-                header[i, 1] = formatSQLtype(dr, i);
-            }
-#endif
-
+            header = getHeader(dr);
+            // Create an enumerator over the results in sequential access order:
             rows = enumerateResults(conn, cmd, dr);
 
             // No errors:
             return null;
         }
 
-        private IEnumerable<IEnumerable<object>> enumerateResults(System.Data.SqlClient.SqlConnection conn, System.Data.SqlClient.SqlCommand cmd, System.Data.SqlClient.SqlDataReader dr)
+        private static string[,] getHeader(System.Data.SqlClient.SqlDataReader dr)
+        {
+            // Generate the header:
+            int fieldCount = dr.FieldCount;
+
+            var header = new string[fieldCount, 2];
+            for (int i = 0; i < fieldCount; ++i)
+            {
+                header[i, 0] = dr.GetName(i);
+                header[i, 1] = formatSQLtype(dr, i);
+            }
+
+            return header;
+        }
+
+        private static IEnumerable<IEnumerable<object>> enumerateResults(System.Data.SqlClient.SqlConnection conn, System.Data.SqlClient.SqlCommand cmd, System.Data.SqlClient.SqlDataReader dr)
         {
             using (conn)
             using (cmd)
@@ -1806,21 +2201,14 @@ $(function() {
 
                 while (dr.Read())
                 {
-#if false
-                    int nc = dr.GetValues(values);
-                    System.Diagnostics.Debug.Assert(nc == fieldCount);
-
-                    yield return values;
-#else
                     yield return enumerateColumns(dr, fieldCount);
-#endif
                 }
 
                 conn.Close();
             }
         }
 
-        private IEnumerable<object> enumerateColumns(System.Data.SqlClient.SqlDataReader dr, int fieldCount)
+        private static IEnumerable<object> enumerateColumns(System.Data.SqlClient.SqlDataReader dr, int fieldCount)
         {
             for (int i = 0; i < fieldCount; ++i)
             {
