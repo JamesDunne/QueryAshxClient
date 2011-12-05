@@ -69,6 +69,27 @@ namespace rsatest
                         if (req == null) return;
                         break;
                     }
+                case "REVOKE-PUBLICKEY":
+                    {
+                        string newpubkey64 = cleanBase64(config["revoke-public-key"]);
+
+                        // Verify that the public key is RSA formatted in OpenSSL:
+                        Console.Write("Verifying public key to revoke as RSA...");
+                        try
+                        {
+                            RSAParameters tmp = pubkeyFromBase64(newpubkey64);
+                            Console.WriteLine(" verified.");
+                        }
+                        catch (ArgumentException aex)
+                        {
+                            Console.WriteLine(" {0}", aex.Message);
+                            return;
+                        }
+
+                        req = doRevokePublicKey(openSSLprivateKey, url, newpubkey64);
+                        if (req == null) return;
+                        break;
+                    }
                 default:
                     Console.WriteLine("Unknown operation mode!");
                     return;
@@ -152,6 +173,43 @@ namespace rsatest
 
             HttpWebRequest req = createPOSTRequestFormEncoded(
                 url + "?ap=1",
+                "application/json",
+                postData
+            );
+
+            return req;
+        }
+
+        private static HttpWebRequest doRevokePublicKey(string[] openSSLprivateKey, string url, string newpubkey64)
+        {
+            // Decrypt the private key file, prompting for a passphrase if encrypted:
+            RSAParameters key;
+            if (!privkeyFromOpenSSL(openSSLprivateKey, promptForPassphrase, out key))
+            {
+                Console.WriteLine("Either failed to read private key or passphrase is incorrect!");
+                return null;
+            }
+
+            Console.WriteLine("revoke public-key:\n{0}\n", newpubkey64);
+            byte[] newpubkey = Convert.FromBase64String(newpubkey64);
+            byte[] signed = signDataWithKey(newpubkey, key);
+
+            // POST to server:
+            string pubkey64 = pubkeyToBase64(key);
+            string signed64 = Convert.ToBase64String(signed);
+
+            Console.WriteLine("public-key:\n{0}\n", pubkey64);
+            Console.WriteLine("signed-hash:\n{0}\n", signed64);
+
+            var postData = new Dictionary<string, string>
+            {
+                { "p", pubkey64 },
+                { "s", signed64 },
+                { "n", newpubkey64 },
+            };
+
+            HttpWebRequest req = createPOSTRequestFormEncoded(
+                url + "?rp=1",
                 "application/json",
                 postData
             );

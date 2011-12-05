@@ -54,8 +54,13 @@ namespace AdHocQuery
         /// </summary>
         const int defaultRowLimit = 1000;
 
+        /// <summary>
+        /// The master authorized public keys for the commit feature. These must be OpenSSL formatted RSA public keys encoded in BASE-64.
+        /// </summary>
         private static readonly string[] defaultAuthorizedPublicKeys = new string[] {
-            @"AAAAA3JzYQAAAAEjAAAAgK7Nu+KxnCCe+VVIQvCIXe1jqT9YcfYek1Y42HAAJiVuiTLV9Ng4cR8vc5bI2aui1aAkMrajYoP/vfLM8Fu82n1P8ufvmuQ3BoJbuWtfJUcz9216Z+TvOjZq4dtX9AZB6dYa8vnwqcaiDbkaXE06ODjwqfWgqqc+KWaHLpYNosEv"
+            // Same public key except different keytype ("ssh-rsa" vs. "rsa"):
+            @"AAAAA3JzYQAAAAEjAAAAgK7Nu+KxnCCe+VVIQvCIXe1jqT9YcfYek1Y42HAAJiVuiTLV9Ng4cR8vc5bI2aui1aAkMrajYoP/vfLM8Fu82n1P8ufvmuQ3BoJbuWtfJUcz9216Z+TvOjZq4dtX9AZB6dYa8vnwqcaiDbkaXE06ODjwqfWgqqc+KWaHLpYNosEv",
+            @"AAAAB3NzaC1yc2EAAAABIwAAAICuzbvisZwgnvlVSELwiF3tY6k/WHH2HpNWONhwACYlboky1fTYOHEfL3OWyNmrotWgJDK2o2KD/73yzPBbvNp9T/Ln75rkNwaCW7lrXyVHM/dtemfk7zo2auHbV/QGQenWGvL58KnGog25GlxNOjg48Kn1oKqnPilmhy6WDaLBLw==",
         };
 
         private int rowLimit = defaultRowLimit;
@@ -89,6 +94,11 @@ namespace AdHocQuery
             else if (getFormOrQueryValue("ap") != null)
             {
                 addPublicKey();
+                return;
+            }
+            else if (getFormOrQueryValue("rp") != null)
+            {
+                revokePublicKey();
                 return;
             }
 
@@ -1452,30 +1462,12 @@ $(function() {
         // Handle data modification commands securely.
         private void modifyCommit(bool doCommit)
         {
-            if (!String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
-            {
-                errorResponse(405, "POST method expected");
-                return;
-            }
-
-            // Grab the user's public key and the signed (encrypted) query command:
-            string pubkey64 = cleanBase64(req.Form["p"]);
-            string signed64 = cleanBase64(req.Form["s"]);
             string cmd = req.Form["c"];
             string query = req.Form["q"];
             string connString = getFormOrQueryValue("cs");
 
-            // `pubkey` is BASE64 serialized public key:
-            if (!isKeyAuthorized(pubkey64))
-            {
-                errorResponse(403, "Public key '{0}' not authorized", pubkey64);
-                return;
-            }
-
             // All fields are required input:
-            if (String.IsNullOrEmpty(pubkey64)
-             || String.IsNullOrEmpty(signed64)
-             || String.IsNullOrEmpty(cmd)
+            if (String.IsNullOrEmpty(cmd)
              || String.IsNullOrEmpty(query)
              || String.IsNullOrEmpty(connString))
             {
@@ -1483,17 +1475,10 @@ $(function() {
                 return;
             }
 
-            // Client's public key is an authorized user.
-            RSAParameters clientpubkey = pubkeyFromBase64(pubkey64);
-
-            // Verify the signed data:
-            byte[] signed = Convert.FromBase64String(signed64);
-            byte[] verification = Encoding.UTF8.GetBytes(cmd + "\n" + query);
-            if (!verifySignedHashWithKey(verification, signed, clientpubkey))
-            {
-                errorResponse(403, "Public key could not be verified against signed data");
+            // Verify that the user is who he says he is:
+            string pubkey64;
+            if (!verifyAuthorization(() => Encoding.UTF8.GetBytes(cmd + "\n" + query), out pubkey64))
                 return;
-            }
 
             // Client is now verified to hold the private key paired with the public key they gave us.
 
@@ -1580,55 +1565,27 @@ $(function() {
         // Adds a new public key to the authorized keys file.
         private void addPublicKey()
         {
-            if (!String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
-            {
-                errorResponse(405, "POST method expected");
-                return;
-            }
-
-            // Grab the user's public key and the signed (encrypted) query command:
-            string pubkey64 = cleanBase64(req.Form["p"]);
-            string signed64 = cleanBase64(req.Form["s"]);
             string newpubkey64 = cleanBase64(req.Form["n"]);
 
-            // `pubkey` is BASE64 serialized public key:
-            if (!isKeyAuthorized(pubkey64))
-            {
-                errorResponse(403, "Public key '{0}' not authorized", pubkey64);
-                return;
-            }
-
             // All fields are required input:
-            if (String.IsNullOrEmpty(pubkey64)
-             || String.IsNullOrEmpty(signed64)
-             || String.IsNullOrEmpty(newpubkey64))
+            if (String.IsNullOrEmpty(newpubkey64))
             {
                 errorResponse(403, "A required input field is missing");
                 return;
             }
 
-            // Validate that the new public key is RSA:
-            try
+            // Validate that the to-be-added public key is RSA:
+            string errorMessage;
+            if (!isKeyValidFormat(newpubkey64, out errorMessage))
             {
-                RSAParameters tmp = pubkeyFromBase64(newpubkey64);
-            }
-            catch (ArgumentException aex)
-            {
-                errorResponse(403, aex.Message);
+                errorResponse(403, "New public key error: " + errorMessage);
                 return;
             }
 
-            // Client's public key is an authorized user.
-            RSAParameters clientpubkey = pubkeyFromBase64(pubkey64);
-
-            // Verify the signed data:
-            byte[] signed = Convert.FromBase64String(signed64);
-            byte[] newpubkey = Convert.FromBase64String(newpubkey64);
-            if (!verifySignedHashWithKey(newpubkey, signed, clientpubkey))
-            {
-                errorResponse(403, "Public key could not be verified against signed data");
+            // Verify that the user is who he says he is:
+            string pubkey64;
+            if (!verifyAuthorization(() => Convert.FromBase64String(newpubkey64), out pubkey64))
                 return;
-            }
 
             // Client is now verified to hold the private key paired with the public key they gave us.
 
@@ -1637,6 +1594,92 @@ $(function() {
 
             rsp.StatusCode = 200;
             rsp.Output.Write("Authorizing public key '{0}': {1}", newpubkey64, status);
+        }
+
+        // Revokes a public key from the authorized keys file.
+        private void revokePublicKey()
+        {
+            string newpubkey64 = cleanBase64(req.Form["n"]);
+
+            // All fields are required input:
+            if (String.IsNullOrEmpty(newpubkey64))
+            {
+                errorResponse(403, "A required input field is missing");
+                return;
+            }
+
+            // Validate that the to-be-added public key is RSA:
+            string errorMessage;
+            if (!isKeyValidFormat(newpubkey64, out errorMessage))
+            {
+                errorResponse(403, "Revocation public key error: " + errorMessage);
+                return;
+            }
+
+            // Verify that the user is who he says he is:
+            string pubkey64;
+            if (!verifyAuthorization(() => Convert.FromBase64String(newpubkey64), out pubkey64))
+                return;
+
+            // Client is now verified to hold the private key paired with the public key they gave us.
+
+            // Revoke the public key from the authorized keys file if it doesn't already exist:
+            string status = revokeKeyFromAuthorizedFile(newpubkey64);
+
+            rsp.StatusCode = 200;
+            rsp.Output.Write("Revoking public key '{0}': {1}", newpubkey64, status);
+        }
+
+        private bool verifyAuthorization(Func<byte[]> getDataToSign, out string pubkey64)
+        {
+            if (!String.Equals(req.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
+            {
+                errorResponse(405, "POST method expected");
+                pubkey64 = null;
+                return false;
+            }
+
+            string errorMessage;
+
+            // Grab the user's public key and the signed (encrypted) data:
+            pubkey64 = cleanBase64(req.Form["p"]);
+            string signed64 = cleanBase64(req.Form["s"]);
+
+            // All fields are required input:
+            if (String.IsNullOrEmpty(pubkey64)
+             || String.IsNullOrEmpty(signed64))
+            {
+                errorResponse(403, "A required input field is missing");
+                return false;
+            }
+
+            // Validate that the new public key is RSA:
+            if (!isKeyValidFormat(pubkey64, out errorMessage))
+            {
+                errorResponse(403, errorMessage);
+                return false;
+            }
+
+            // Check that the public key is in the authorized keys list:
+            if (!isKeyAuthorized(pubkey64))
+            {
+                errorResponse(403, "Public key '{0}' not authorized", pubkey64);
+                return false;
+            }
+
+            // Client's public key is an authorized user; now let's verify that the client sending us the public key actually holds the paired private key:
+            RSAParameters clientpubkey = pubkeyFromBase64(pubkey64);
+
+            // Verify the signed data:
+            byte[] signed = Convert.FromBase64String(signed64);
+            byte[] toSign = getDataToSign();
+            if (!verifySignedHashWithKey(toSign, signed, clientpubkey))
+            {
+                errorResponse(403, "Public key could not be verified against signed data");
+                return false;
+            }
+
+            return true;
         }
 
         private static bool executeQuery(string connString, string query, out string[,] header, out IEnumerable<IEnumerable<object>> results, out Exception error)
@@ -1728,6 +1771,43 @@ $(function() {
             return "Key successfully added";
         }
 
+        private string revokeKeyFromAuthorizedFile(string newpubkey64)
+        {
+            string[] authKeys = defaultAuthorizedPublicKeys;
+            if (authKeys.Contains(newpubkey64))
+            {
+                return "Cannot revoke a master key";
+            }
+
+            try
+            {
+                using (var tr = new System.IO.StreamReader(KeysPath, Encoding.UTF8))
+                using (var tw = new System.IO.StreamWriter(KeysPath + ".tmp", false, Encoding.UTF8))
+                {
+                    string line;
+                    bool found = false;
+                    while ((line = tr.ReadLine()) != null)
+                    {
+                        if (line == newpubkey64)
+                            found = true;
+                        else
+                            tw.WriteLine(line);
+                    }
+                    if (!found)
+                    {
+                        return "Could not find public key to revoke";
+                    }
+                }
+            }
+            finally
+            {
+                System.IO.File.Delete(KeysPath);
+                System.IO.File.Move(KeysPath + ".tmp", KeysPath);
+            }
+
+            return "Key successfully revoked";
+        }
+
         private static byte[] itobNetwork(int i)
         {
             return BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(i));
@@ -1736,6 +1816,22 @@ $(function() {
         private static int btoiNetwork(byte[] b, int startIndex)
         {
             return System.Net.IPAddress.NetworkToHostOrder(BitConverter.ToInt32(b, startIndex));
+        }
+
+        private static bool isKeyValidFormat(string pubkey64, out string message)
+        {
+            // Validate that the public key is RSA formatted and valid:
+            try
+            {
+                RSAParameters tmp = pubkeyFromBase64(pubkey64);
+            }
+            catch (ArgumentException aex)
+            {
+                message = aex.Message;
+                return false;
+            }
+            message = null;
+            return true;
         }
 
         private static RSAParameters pubkeyFromBase64(string base64)
