@@ -18,7 +18,7 @@
 //#undef DEBUG
 
 // Enable when disconnected and/or cannot access 'ajax.googleapis.com'
-#define Local
+//#define Local
 
 // Enable logging of queries to ~/query.ashx.log
 #define LogQueries
