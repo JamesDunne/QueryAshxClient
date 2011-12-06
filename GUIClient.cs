@@ -487,6 +487,7 @@ namespace rsatest
 
                 // Set up the grid for usability:
                 doubleBuffered(dg, true);
+                dg.AlternatingRowsDefaultCellStyle.BackColor = Color.Azure;
                 dg.AllowUserToAddRows = false;
                 dg.AllowUserToDeleteRows = false;
                 dg.AllowUserToOrderColumns = false;
