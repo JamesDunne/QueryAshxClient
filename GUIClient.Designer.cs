@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.txtURL = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -52,7 +52,7 @@
             this.label6 = new System.Windows.Forms.Label();
             this.txtConnectionString = new System.Windows.Forms.TextBox();
             this.tbKeys = new System.Windows.Forms.TabPage();
-            this.panel5 = new System.Windows.Forms.Panel();
+            this.pnlQuery = new System.Windows.Forms.Panel();
             this.panel6 = new System.Windows.Forms.Panel();
             this.txtQueryWithIdentifier = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
@@ -86,7 +86,7 @@
             this.panel3.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel1.SuspendLayout();
-            this.panel5.SuspendLayout();
+            this.pnlQuery.SuspendLayout();
             this.panel6.SuspendLayout();
             this.panel7.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).BeginInit();
@@ -98,7 +98,7 @@
             // 
             this.groupBox1.Controls.Add(this.txtConnectionString);
             this.groupBox1.Controls.Add(this.label6);
-            this.groupBox1.Controls.Add(this.textBox1);
+            this.groupBox1.Controls.Add(this.txtURL);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
@@ -108,14 +108,14 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Server";
             // 
-            // textBox1
+            // txtURL
             // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.txtURL.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox1.Location = new System.Drawing.Point(148, 15);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(534, 22);
-            this.textBox1.TabIndex = 1;
+            this.txtURL.Location = new System.Drawing.Point(148, 15);
+            this.txtURL.Name = "txtURL";
+            this.txtURL.Size = new System.Drawing.Size(534, 22);
+            this.txtURL.TabIndex = 1;
             // 
             // label1
             // 
@@ -153,7 +153,7 @@
             // tbQuery
             // 
             this.tbQuery.Controls.Add(this.panel6);
-            this.tbQuery.Controls.Add(this.panel5);
+            this.tbQuery.Controls.Add(this.pnlQuery);
             this.tbQuery.Location = new System.Drawing.Point(4, 25);
             this.tbQuery.Name = "tbQuery";
             this.tbQuery.Padding = new System.Windows.Forms.Padding(3);
@@ -351,30 +351,30 @@
             this.tbKeys.Text = "Key Management";
             this.tbKeys.UseVisualStyleBackColor = true;
             // 
-            // panel5
+            // pnlQuery
             // 
-            this.panel5.Controls.Add(this.txtQueryOrderBy);
-            this.panel5.Controls.Add(this.label15);
-            this.panel5.Controls.Add(this.txtQueryHaving);
-            this.panel5.Controls.Add(this.label14);
-            this.panel5.Controls.Add(this.txtQueryGroupBy);
-            this.panel5.Controls.Add(this.label13);
-            this.panel5.Controls.Add(this.label12);
-            this.panel5.Controls.Add(this.txtQueryWhere);
-            this.panel5.Controls.Add(this.label11);
-            this.panel5.Controls.Add(this.txtQueryFrom);
-            this.panel5.Controls.Add(this.label10);
-            this.panel5.Controls.Add(this.txtQuerySelect);
-            this.panel5.Controls.Add(this.label9);
-            this.panel5.Controls.Add(this.label8);
-            this.panel5.Controls.Add(this.txtQueryWithExpression);
-            this.panel5.Controls.Add(this.label7);
-            this.panel5.Controls.Add(this.txtQueryWithIdentifier);
-            this.panel5.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel5.Location = new System.Drawing.Point(3, 3);
-            this.panel5.Name = "panel5";
-            this.panel5.Size = new System.Drawing.Size(675, 365);
-            this.panel5.TabIndex = 0;
+            this.pnlQuery.Controls.Add(this.txtQueryOrderBy);
+            this.pnlQuery.Controls.Add(this.label15);
+            this.pnlQuery.Controls.Add(this.txtQueryHaving);
+            this.pnlQuery.Controls.Add(this.label14);
+            this.pnlQuery.Controls.Add(this.txtQueryGroupBy);
+            this.pnlQuery.Controls.Add(this.label13);
+            this.pnlQuery.Controls.Add(this.label12);
+            this.pnlQuery.Controls.Add(this.txtQueryWhere);
+            this.pnlQuery.Controls.Add(this.label11);
+            this.pnlQuery.Controls.Add(this.txtQueryFrom);
+            this.pnlQuery.Controls.Add(this.label10);
+            this.pnlQuery.Controls.Add(this.txtQuerySelect);
+            this.pnlQuery.Controls.Add(this.label9);
+            this.pnlQuery.Controls.Add(this.label8);
+            this.pnlQuery.Controls.Add(this.txtQueryWithExpression);
+            this.pnlQuery.Controls.Add(this.label7);
+            this.pnlQuery.Controls.Add(this.txtQueryWithIdentifier);
+            this.pnlQuery.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlQuery.Location = new System.Drawing.Point(3, 3);
+            this.pnlQuery.Name = "pnlQuery";
+            this.pnlQuery.Size = new System.Drawing.Size(675, 365);
+            this.pnlQuery.TabIndex = 0;
             // 
             // panel6
             // 
@@ -438,13 +438,12 @@
             this.txtQuerySelect.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtQuerySelect.HideSelection = false;
-            this.txtQuerySelect.Location = new System.Drawing.Point(89, 92);
+            this.txtQuerySelect.Location = new System.Drawing.Point(87, 92);
             this.txtQuerySelect.Multiline = true;
             this.txtQuerySelect.Name = "txtQuerySelect";
             this.txtQuerySelect.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtQuerySelect.Size = new System.Drawing.Size(583, 57);
             this.txtQuerySelect.TabIndex = 5;
-            this.txtQuerySelect.Text = "\r\n";
             // 
             // label10
             // 
@@ -462,13 +461,12 @@
             this.txtQueryFrom.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtQueryFrom.HideSelection = false;
-            this.txtQueryFrom.Location = new System.Drawing.Point(89, 155);
+            this.txtQueryFrom.Location = new System.Drawing.Point(87, 155);
             this.txtQueryFrom.Multiline = true;
             this.txtQueryFrom.Name = "txtQueryFrom";
             this.txtQueryFrom.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtQueryFrom.Size = new System.Drawing.Size(583, 57);
             this.txtQueryFrom.TabIndex = 7;
-            this.txtQueryFrom.Text = "\r\n";
             // 
             // label11
             // 
@@ -494,13 +492,12 @@
             this.txtQueryWhere.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtQueryWhere.HideSelection = false;
-            this.txtQueryWhere.Location = new System.Drawing.Point(89, 218);
+            this.txtQueryWhere.Location = new System.Drawing.Point(87, 218);
             this.txtQueryWhere.Multiline = true;
             this.txtQueryWhere.Name = "txtQueryWhere";
             this.txtQueryWhere.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtQueryWhere.Size = new System.Drawing.Size(583, 57);
             this.txtQueryWhere.TabIndex = 9;
-            this.txtQueryWhere.Text = "\r\n";
             // 
             // label13
             // 
@@ -515,7 +512,7 @@
             // 
             this.txtQueryGroupBy.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQueryGroupBy.Location = new System.Drawing.Point(87, 281);
+            this.txtQueryGroupBy.Location = new System.Drawing.Point(87, 284);
             this.txtQueryGroupBy.Name = "txtQueryGroupBy";
             this.txtQueryGroupBy.Size = new System.Drawing.Size(583, 22);
             this.txtQueryGroupBy.TabIndex = 12;
@@ -584,6 +581,7 @@
             this.btnQueryExecute.TabIndex = 0;
             this.btnQueryExecute.Text = "Execute";
             this.btnQueryExecute.UseVisualStyleBackColor = true;
+            this.btnQueryExecute.Click += new System.EventHandler(this.btnQueryExecute_Click);
             // 
             // panel8
             // 
@@ -636,8 +634,8 @@
             this.panel2.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
-            this.panel5.ResumeLayout(false);
-            this.panel5.PerformLayout();
+            this.pnlQuery.ResumeLayout(false);
+            this.pnlQuery.PerformLayout();
             this.panel6.ResumeLayout(false);
             this.panel7.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).EndInit();
@@ -651,7 +649,7 @@
 
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox txtURL;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tbQuery;
@@ -674,7 +672,7 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TabPage tbKeys;
         private System.Windows.Forms.Panel panel6;
-        private System.Windows.Forms.Panel panel5;
+        private System.Windows.Forms.Panel pnlQuery;
         private System.Windows.Forms.TextBox txtQuerySelect;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Label label8;
