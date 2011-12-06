@@ -1509,13 +1509,14 @@ $(function() {
 " + (doCommit ? "COMMIT TRAN" : "ROLLBACK TRAN");
 
             Exception error;
+            long timeMsec;
             string[,] header;
             IEnumerable<IEnumerable<object>> results;
 
             var final = new Dictionary<string, object>();
 
             // Execute the command:
-            bool execSuccess = executeQuery(connString, cmdtext, out header, out results, out error);
+            bool execSuccess = executeQuery(connString, cmdtext, out timeMsec, out header, out results, out error);
 
             // Render the results to JSON:
 
@@ -1548,6 +1549,7 @@ $(function() {
             else
             {
                 rsp.StatusCode = 200;
+                final.Add("time", timeMsec);
                 final.Add("command", cmdtext);
                 getJSONDictionary(final, JsonOutput.Array, true, false, header, results);
             }
@@ -1701,7 +1703,7 @@ $(function() {
             return true;
         }
 
-        private static bool executeQuery(string connString, string query, out string[,] header, out IEnumerable<IEnumerable<object>> results, out Exception error)
+        private static bool executeQuery(string connString, string query, out long timeMsec, out string[,] header, out IEnumerable<IEnumerable<object>> results, out Exception error)
         {
             // Open a connection and execute the command:
             var conn = new System.Data.SqlClient.SqlConnection(connString);
@@ -1717,7 +1719,10 @@ $(function() {
                 cmd.CommandTimeout = 360;   // seconds
 
                 // Open a data reader to read the results:
+                System.Diagnostics.Stopwatch swTimer = System.Diagnostics.Stopwatch.StartNew();
                 dr = cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
+                swTimer.Stop();
+                timeMsec = swTimer.ElapsedMilliseconds;
             }
             catch (Exception ex)
             {
@@ -1727,6 +1732,7 @@ $(function() {
                 // Set the exception and failed return:
                 header = null;
                 results = null;
+                timeMsec = -1L;
                 error = ex;
                 return false;
             }
