@@ -1643,13 +1643,32 @@ $(function() {
 
             // Grab the user's public key and the signed (encrypted) data:
             pubkey64 = cleanBase64(req.Form["p"]);
+            string timestampStr = req.Form["ts"];
             string signed64 = cleanBase64(req.Form["s"]);
 
             // All fields are required input:
             if (String.IsNullOrEmpty(pubkey64)
-             || String.IsNullOrEmpty(signed64))
+             || String.IsNullOrEmpty(signed64)
+             || String.IsNullOrEmpty(timestampStr))
             {
                 errorResponse(403, "A required input field is missing");
+                return false;
+            }
+
+            // Verify the timestamp:
+            long timestampTicks;
+            if (!long.TryParse(timestampStr, out timestampTicks))
+            {
+                errorResponse(403, "Could not parse timestamp");
+                return false;
+            }
+
+            // Combat replay attacks by verifying the timestamp is within a +/- 5 second window.
+            long currTimestamp = DateTime.UtcNow.Ticks;
+            if ((timestampTicks < (currTimestamp - (TimeSpan.TicksPerSecond * 5L)))
+              || (timestampTicks > (currTimestamp + (TimeSpan.TicksPerSecond * 5L))))
+            {
+                errorResponse(403, "Timestamp out of range");
                 return false;
             }
 
@@ -1672,7 +1691,7 @@ $(function() {
 
             // Verify the signed data:
             byte[] signed = Convert.FromBase64String(signed64);
-            byte[] toSign = getDataToSign();
+            byte[] toSign = BitConverter.GetBytes(timestampTicks).Concat(getDataToSign()).ToArray();
             if (!verifySignedHashWithKey(toSign, signed, clientpubkey))
             {
                 errorResponse(403, "Public key could not be verified against signed data");

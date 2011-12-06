@@ -155,7 +155,9 @@ namespace rsatest
 
             Console.WriteLine("authorize public-key:\n{0}\n", newpubkey64);
             byte[] newpubkey = Convert.FromBase64String(newpubkey64);
-            byte[] signed = signDataWithKey(newpubkey, key);
+            long timestampTicks = DateTime.UtcNow.Ticks;
+            byte[] toSign = BitConverter.GetBytes(timestampTicks).Concat(newpubkey).ToArray();
+            byte[] signed = signDataWithKey(toSign, key);
 
             // POST to server:
             string pubkey64 = pubkeyToBase64(key);
@@ -168,6 +170,7 @@ namespace rsatest
             {
                 { "p", pubkey64 },
                 { "s", signed64 },
+                { "ts", timestampTicks.ToString() },
                 { "n", newpubkey64 },
             };
 
@@ -192,7 +195,9 @@ namespace rsatest
 
             Console.WriteLine("revoke public-key:\n{0}\n", newpubkey64);
             byte[] newpubkey = Convert.FromBase64String(newpubkey64);
-            byte[] signed = signDataWithKey(newpubkey, key);
+            long timestampTicks = DateTime.UtcNow.Ticks;
+            byte[] toSign = BitConverter.GetBytes(timestampTicks).Concat(newpubkey).ToArray();
+            byte[] signed = signDataWithKey(toSign, key);
 
             // POST to server:
             string pubkey64 = pubkeyToBase64(key);
@@ -205,6 +210,7 @@ namespace rsatest
             {
                 { "p", pubkey64 },
                 { "s", signed64 },
+                { "ts", timestampTicks.ToString() },
                 { "n", newpubkey64 },
             };
 
@@ -244,7 +250,9 @@ namespace rsatest
             }
 
             byte[] data = Encoding.UTF8.GetBytes(cmd + "\n" + query);
-            byte[] signed = signDataWithKey(data, key);
+            long timestampTicks = DateTime.UtcNow.Ticks;
+            byte[] toSign = BitConverter.GetBytes(timestampTicks).Concat(data).ToArray();
+            byte[] signed = signDataWithKey(toSign, key);
 
             // POST to server:
             string pubkey64 = pubkeyToBase64(key);
@@ -257,6 +265,7 @@ namespace rsatest
             {
                 { "p", pubkey64 },
                 { "s", signed64 },
+                { "ts", timestampTicks.ToString() },
                 { "c", cmd },
                 { "q", query },
                 { "cs", connString }
