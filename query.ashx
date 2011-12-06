@@ -130,8 +130,7 @@ namespace AdHocQuery
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "json3", StringComparison.OrdinalIgnoreCase))
                 {
-                    // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
-                    // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
+                    // JSON with each row an array of values [ value1, value2, value3, ... ]
                     renderJSON(JsonOutput.Array, noQuery, noHeader);
                 }
                 else if (String.Equals(getFormOrQueryValue("output"), "xml", StringComparison.OrdinalIgnoreCase))
@@ -1103,7 +1102,8 @@ $(function() {
 
             if (errMessage != null)
             {
-                final.Add("error", errMessage);
+                // TODO: more verbose error reporting
+                final.Add("error", new Dictionary<string, object> { { "message", errMessage } });
                 tw.Write(jss.Serialize(final));
                 return;
             }
