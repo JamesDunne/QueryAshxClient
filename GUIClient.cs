@@ -433,7 +433,7 @@ namespace rsatest
 
             // Deserialize the JSON:
             var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
-            jss.RecursionLimit = 4;
+            jss.RecursionLimit = 6;
             jss.MaxJsonLength = int.MaxValue;
             var dict = jss.Deserialize<Dictionary<string, object>>(json);
             json = null;
@@ -456,7 +456,9 @@ namespace rsatest
 #endif
 
             ArrayList alHeader, alResults;
-            int timeMsec = (int)dict["time"];
+            int timeMsec = -1;
+            if (dict.ContainsKey("time"))
+                timeMsec = (int)dict["time"];
             alHeader = (ArrayList)dict["header"];
             alResults = (ArrayList)dict["results"];
 
@@ -533,6 +535,7 @@ namespace rsatest
             req.Accept = accept;
             req.ContentType = "application/x-www-form-urlencoded";
 
+            // This opens a connection to the web site:
             using (var reqstr = req.GetRequestStream())
             using (var tw = new StreamWriter(reqstr))
             {
