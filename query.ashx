@@ -1549,7 +1549,7 @@ $(function() {
             {
                 rsp.StatusCode = 200;
                 final.Add("command", cmdtext);
-                getJSONDictionary(final, JsonOutput.KeyValuePair, true, false, header, results);
+                getJSONDictionary(final, JsonOutput.Array, true, false, header, results);
             }
 
             // Serialize the dictionary to JSON:
