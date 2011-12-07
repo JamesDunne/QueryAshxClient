@@ -387,6 +387,7 @@ namespace rsatest
 
         private static Type getCLRTypeForSQLType(string sqlTypeName)
         {
+            // TODO: complete me!
             return typeof(string);
         }
 
@@ -403,6 +404,7 @@ namespace rsatest
             public Action enableQueryPanels;
             public DataGridView dgResults;
             public Action<int> reportQueryTime;
+            public Action<Dictionary<string, object>> handleError;
         }
 
         private void responseCallbackUpdateGridResults(IAsyncResult iar)
@@ -438,14 +440,11 @@ namespace rsatest
             var dict = jss.Deserialize<Dictionary<string, object>>(json);
             json = null;
 
-            object errObj;
-            if (dict.TryGetValue("error", out errObj))
+            Dictionary<string, object> errdict;
+            if (dict.TryGetValueAs("error", o => (Dictionary<string, object>)o, out errdict))
             {
                 // Handle error responses:
-                var errdict = (Dictionary<string, object>)errObj;
-                foreach (KeyValuePair<string, object> pair in errdict)
-                    Debug.WriteLine(String.Format("error.{0} = {1}", pair.Key, pair.Value));
-                errObj = null;
+                st.handleError(errdict);
                 return;
             }
 
@@ -457,14 +456,17 @@ namespace rsatest
 
             ArrayList alHeader, alResults;
             int timeMsec = -1;
-            if (dict.ContainsKey("time"))
-                timeMsec = (int)dict["time"];
-            alHeader = (ArrayList)dict["header"];
-            alResults = (ArrayList)dict["results"];
+            timeMsec = dict.GetValueOrDefaultAs("time", o => (int)o, -1);
+            alHeader = dict.GetValueOrDefaultAs("header", o => (ArrayList)o);
+            alResults = dict.GetValueOrDefaultAs("results", o => (ArrayList)o);
 
             var header = (
                 from Dictionary<string, object> h in alHeader
-                select new { name = (string)h["name"], sqlTypeName = (string)h["type"], ordinal = (int)h["ordinal"] }
+                select new {
+                    name = h.GetValueOrDefaultAs("name", o => (string)o),
+                    sqlTypeName = h.GetValueOrDefaultAs("type", o => (string)o),
+                    ordinal = h.GetValueOrDefaultAs("ordinal", o => (int)o)
+                }
             ).ToArray();
 
             // Create a DataTable to represent the results:
@@ -603,6 +605,11 @@ namespace rsatest
                 reportQueryTime = (int msec) =>
                 {
                     lblQueryTime.Text = String.Format("Execution time: {0,6} msec", msec);
+                },
+                handleError = (dict) =>
+                {
+                    string message = dict.GetValueOrDefaultAs("message", o => (string)o);
+                    MessageBox.Show(message);
                 }
             };
 
@@ -671,7 +678,8 @@ namespace rsatest
             var req = createPOSTRequestFormEncoded(reqUrib.Uri.AbsoluteUri, "application/json", postData);
 
             // Disable reentrancy:
-            //pnlQuery.Enabled = false;
+            pnlModifyCommand.Enabled = false;
+            pnlModifyQuery.Enabled = false;
             btnModifyCommit.Enabled = false;
 
             var asyncst = new AsyncUpdateViewState()
@@ -679,13 +687,19 @@ namespace rsatest
                 req = req,
                 enableQueryPanels = () =>
                 {
-                    //pnlQuery.Enabled = true;
+                    pnlModifyCommand.Enabled = true;
+                    pnlModifyQuery.Enabled = true;
                     btnModifyCommit.Enabled = true;
                 },
                 dgResults = dgModifyResults,
                 reportQueryTime = (int msec) =>
                 {
-                    //lblQueryTime.Text = String.Format("Execution time: {0,6} msec", msec);
+                    lblModifyTime.Text = String.Format("Execution time: {0,6} msec", msec);
+                },
+                handleError = (dict) =>
+                {
+                    string message = dict.GetValueOrDefaultAs("message", o => (string)o);
+                    MessageBox.Show(message);
                 }
             };
 
@@ -694,5 +708,62 @@ namespace rsatest
         }
 
         #endregion
+    }
+
+    internal static class ExtensionMethods
+    {
+        public static bool TryGetValueAs<TKey, TValue, TResult>(this IDictionary<TKey, TValue> dict, TKey key, Converter<TValue, TResult> convert, out TResult result)
+        {
+            TValue value;
+            if (dict.TryGetValue(key, out value))
+            {
+                result = convert(value);
+                return true;
+            }
+            result = default(TResult);
+            return false;
+        }
+
+        public static bool TryGetValueAs<TKey, TValue, TResult>(this IDictionary<TKey, TValue> dict, TKey key, Converter<TValue, TResult> convert, Func<TResult> getDefaultResult, out TResult result)
+        {
+            TValue value;
+            if (dict.TryGetValue(key, out value))
+            {
+                result = convert(value);
+                return true;
+            }
+            result = getDefaultResult();
+            return false;
+        }
+
+        public static TResult GetValueOrDefaultAs<TKey, TValue, TResult>(this IDictionary<TKey, TValue> dict, TKey key, Converter<TValue, TResult> convert)
+        {
+            TValue value;
+            if (dict.TryGetValue(key, out value))
+            {
+                return convert(value);
+            }
+            return default(TResult);
+        }
+
+        public static TResult GetValueOrDefaultAs<TKey, TValue, TResult>(this IDictionary<TKey, TValue> dict, TKey key, Converter<TValue, TResult> convert, TResult defaultValue)
+        {
+            TValue value;
+            if (dict.TryGetValue(key, out value))
+            {
+                return convert(value);
+            }
+            return defaultValue;
+        }
+
+        public static TResult GetValueOrDefaultAs<TKey, TValue, TResult>(this IDictionary<TKey, TValue> dict, TKey key, Converter<TValue, TResult> convert, Func<TResult> getDefaultValue)
+        {
+            TValue value;
+            if (dict.TryGetValue(key, out value))
+            {
+                return convert(value);
+            }
+            return getDefaultValue();
+        }
     }
 }
