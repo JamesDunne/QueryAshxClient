@@ -180,13 +180,14 @@ namespace QueryAshx
             {
                 // Prompt for a passphrase and decrypt the private key with it:
                 string passphrase = getPassphrase();
+                if (String.IsNullOrEmpty(passphrase)) return false;
+
                 byte[] deskey = getOpenSSL3DESkey(iv, passphrase, 1, 2);
                 byte[] encdata = Convert.FromBase64String(b64.ToString());
                 privkeyans1 = decrypt3DESCBC(encdata, deskey, iv);
             }
             else
             {
-                // TODO: verify this!
                 // Just decode the BASE64:
                 privkeyans1 = Convert.FromBase64String(b64.ToString());
             }
@@ -462,7 +463,8 @@ namespace QueryAshx
 
             var header = (
                 from Dictionary<string, object> h in alHeader
-                select new {
+                select new
+                {
                     name = h.GetValueOrDefaultAs("name", o => (string)o),
                     sqlTypeName = h.GetValueOrDefaultAs("type", o => (string)o),
                     ordinal = h.GetValueOrDefaultAs("ordinal", o => (int)o)
@@ -636,6 +638,19 @@ namespace QueryAshx
             UriBuilder reqUrib = getBaseURL();
             if (reqUrib == null) return;
 
+            if (String.IsNullOrEmpty(txtModifyPrivateKeyPath.Text))
+            {
+                msgbox("An OpenSSL RSA private key file must be specified in order to use this feature.");
+                return;
+            }
+
+            string privateKeyPath = txtModifyPrivateKeyPath.Text.Trim();
+            if (!File.Exists(privateKeyPath))
+            {
+                msgbox("Could not find the OpenSSL RSA private key file specified.");
+                return;
+            }
+
             string cmd = txtModifyCommand.Text.Trim();
             string query = txtModifyQuery.Text.Trim();
             if (String.IsNullOrEmpty(cmd) || String.IsNullOrEmpty(query))
@@ -645,14 +660,30 @@ namespace QueryAshx
             }
 
             // Load the lines from the private key file:
-            string[] openSSLprivateKey = File.ReadAllLines(txtModifyPrivateKeyPath.Text.Trim());
+            string[] openSSLprivateKey = File.ReadAllLines(privateKeyPath);
+
+            // TODO: add a "1" mode for commit!
+            // Have the commit button enable only if this function successfully returns results.
+            // Disable the button if anything changes on the form.
 
             // Construct the query string for the request:
             reqUrib.Query = UrlEncodeParameters(new Dictionary<string, string> { { "mu", "0" } });
 
             // Decrypt the private key file, prompting for a passphrase if encrypted:
             RSAParameters key;
-            if (!privkeyFromOpenSSL(openSSLprivateKey, () => txtModifyPassphrase.Text, out key))
+            if (!privkeyFromOpenSSL(
+                openSSLprivateKey,
+                () =>
+                {
+                    if (String.IsNullOrEmpty(txtModifyPassphrase.Text))
+                    {
+                        msgbox("This private key requires a passphrase. Please provide one.");
+                        return null;
+                    }
+                    return txtModifyPassphrase.Text;
+                },
+                out key)
+            )
             {
                 msgbox("Either failed to read private key or passphrase is incorrect!");
                 return;
@@ -710,6 +741,12 @@ namespace QueryAshx
 
             // Asynchronously fetch the response and display the results to the DataGridView:
             req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
+        }
+
+        private void GUIClient_Load(object sender, EventArgs e)
+        {
+            txtURL.Items.Clear();
+            txtURL.Items.AddRange(new string[] { "boo!" });
         }
 
         #endregion

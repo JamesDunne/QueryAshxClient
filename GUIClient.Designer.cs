@@ -37,7 +37,6 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.txtConnectionString = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
-            this.txtURL = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -90,6 +89,7 @@
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.splitContainer3 = new System.Windows.Forms.SplitContainer();
+            this.txtURL = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tabControl1.SuspendLayout();
@@ -119,9 +119,9 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.txtURL);
             this.groupBox1.Controls.Add(this.txtConnectionString);
             this.groupBox1.Controls.Add(this.label6);
-            this.groupBox1.Controls.Add(this.txtURL);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
@@ -148,15 +148,6 @@
             this.label6.Size = new System.Drawing.Size(120, 17);
             this.label6.TabIndex = 2;
             this.label6.Text = "Connection String";
-            // 
-            // txtURL
-            // 
-            this.txtURL.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtURL.Location = new System.Drawing.Point(148, 15);
-            this.txtURL.Name = "txtURL";
-            this.txtURL.Size = new System.Drawing.Size(821, 22);
-            this.txtURL.TabIndex = 1;
             // 
             // label1
             // 
@@ -778,6 +769,15 @@
             this.splitContainer3.SplitterDistance = 403;
             this.splitContainer3.TabIndex = 2;
             // 
+            // txtURL
+            // 
+            this.txtURL.FormattingEnabled = true;
+            this.txtURL.Location = new System.Drawing.Point(148, 15);
+            this.txtURL.Name = "txtURL";
+            this.txtURL.Size = new System.Drawing.Size(821, 24);
+            this.txtURL.TabIndex = 4;
+            this.txtURL.Text = "http://localhost:11936/query.ashx";
+            // 
             // GUIClient
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -787,6 +787,7 @@
             this.Controls.Add(this.groupBox1);
             this.Name = "GUIClient";
             this.Text = "query.ashx client";
+            this.Load += new System.EventHandler(this.GUIClient_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
@@ -827,7 +828,6 @@
 
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.TextBox txtURL;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tbQuery;
@@ -881,5 +881,6 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.SplitContainer splitContainer3;
+        private System.Windows.Forms.ComboBox txtURL;
     }
 }
