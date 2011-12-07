@@ -14,7 +14,7 @@ using System.Reflection;
 using System.Web;
 using System.Security.Cryptography;
 
-namespace rsatest
+namespace QueryAshx
 {
     public partial class GUIClient : Form
     {
@@ -364,7 +364,7 @@ namespace rsatest
             }
             catch (Exception)
             {
-                //Console.WriteLine(exception.Message);
+                //Debug.WriteLine(exception.Message);
                 return null;
             }
 
@@ -430,7 +430,7 @@ namespace rsatest
             using (var tr = new StreamReader(rspstr, Encoding.UTF8))
             {
                 json = tr.ReadToEnd();
-                Debug.WriteLine(json);
+                //Debug.WriteLine(json);
             }
 
             // Deserialize the JSON:
@@ -449,7 +449,7 @@ namespace rsatest
             }
 
             // Should have a successful result now:
-#if DEBUG
+#if false
             foreach (KeyValuePair<string, object> pair in dict)
                 Debug.WriteLine(String.Format("rsp.{0} = {1}", pair.Key, pair.Value));
 #endif
@@ -518,7 +518,7 @@ namespace rsatest
             }
             catch (Exception)
             {
-                MessageBox.Show("Please enter a valid URL.");
+                msgbox("Please enter a valid URL.");
                 return null;
             }
         }
@@ -556,6 +556,11 @@ namespace rsatest
         #endregion
 
         #region UI actions
+
+        private DialogResult msgbox(string message)
+        {
+            return MessageBox.Show(this, message, "query.ashx", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
 
         /// <summary>
         /// Executes the SQL query from the "Query" tab and renders the results.
@@ -609,7 +614,7 @@ namespace rsatest
                 handleError = (dict) =>
                 {
                     string message = dict.GetValueOrDefaultAs("message", o => (string)o);
-                    MessageBox.Show(message);
+                    msgbox(message);
                 }
             };
 
@@ -635,7 +640,7 @@ namespace rsatest
             string query = txtModifyQuery.Text.Trim();
             if (String.IsNullOrEmpty(cmd) || String.IsNullOrEmpty(query))
             {
-                MessageBox.Show("Both a command and a verification query are required.");
+                msgbox("Both a command and a verification query are required.");
                 return;
             }
 
@@ -649,7 +654,7 @@ namespace rsatest
             RSAParameters key;
             if (!privkeyFromOpenSSL(openSSLprivateKey, () => txtModifyPassphrase.Text, out key))
             {
-                MessageBox.Show("Either failed to read private key or passphrase is incorrect!");
+                msgbox("Either failed to read private key or passphrase is incorrect!");
                 return;
             }
 
@@ -662,8 +667,8 @@ namespace rsatest
             string pubkey64 = pubkeyToBase64(key);
             string signed64 = Convert.ToBase64String(signed);
 
-            Console.WriteLine("public-key:\n{0}\n", pubkey64);
-            Console.WriteLine("signed-hash:\n{0}\n", signed64);
+            Debug.WriteLine("public-key:\n{0}\n", pubkey64);
+            Debug.WriteLine("signed-hash:\n{0}\n", signed64);
 
             var postData = new Dictionary<string, string>
             {
@@ -699,7 +704,7 @@ namespace rsatest
                 handleError = (dict) =>
                 {
                     string message = dict.GetValueOrDefaultAs("message", o => (string)o);
-                    MessageBox.Show(message);
+                    msgbox(message);
                 }
             };
 

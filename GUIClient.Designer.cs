@@ -1,4 +1,4 @@
-﻿namespace rsatest
+﻿namespace QueryAshx
 {
     partial class GUIClient
     {
@@ -28,6 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.txtConnectionString = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
@@ -36,7 +42,7 @@
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tbQuery = new System.Windows.Forms.TabPage();
-            this.panel6 = new System.Windows.Forms.Panel();
+            this.pnlQueryResults = new System.Windows.Forms.Panel();
             this.dgQueryResults = new System.Windows.Forms.DataGridView();
             this.panel7 = new System.Windows.Forms.Panel();
             this.lblQueryTime = new System.Windows.Forms.Label();
@@ -61,9 +67,10 @@
             this.txtQueryWithIdentifier = new System.Windows.Forms.TextBox();
             this.tbLog = new System.Windows.Forms.TabPage();
             this.tbModify = new System.Windows.Forms.TabPage();
-            this.panel4 = new System.Windows.Forms.Panel();
+            this.pnlModifyResults = new System.Windows.Forms.Panel();
             this.dgModifyResults = new System.Windows.Forms.DataGridView();
             this.panel8 = new System.Windows.Forms.Panel();
+            this.lblModifyTime = new System.Windows.Forms.Label();
             this.btnModifyCommit = new System.Windows.Forms.Button();
             this.pnlModifyQuery = new System.Windows.Forms.Panel();
             this.txtModifyQuery = new System.Windows.Forms.TextBox();
@@ -79,22 +86,35 @@
             this.txtModifyPrivateKeyPath = new System.Windows.Forms.TextBox();
             this.tbKeys = new System.Windows.Forms.TabPage();
             this.dlgImportKey = new System.Windows.Forms.OpenFileDialog();
-            this.lblModifyTime = new System.Windows.Forms.Label();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.splitContainer2 = new System.Windows.Forms.SplitContainer();
+            this.splitContainer3 = new System.Windows.Forms.SplitContainer();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tbQuery.SuspendLayout();
-            this.panel6.SuspendLayout();
+            this.pnlQueryResults.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).BeginInit();
             this.panel7.SuspendLayout();
             this.pnlQuery.SuspendLayout();
             this.tbModify.SuspendLayout();
-            this.panel4.SuspendLayout();
+            this.pnlModifyResults.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgModifyResults)).BeginInit();
             this.panel8.SuspendLayout();
             this.pnlModifyQuery.SuspendLayout();
             this.pnlModifyCommand.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
+            this.splitContainer2.Panel1.SuspendLayout();
+            this.splitContainer2.Panel2.SuspendLayout();
+            this.splitContainer2.SuspendLayout();
+            this.splitContainer3.Panel1.SuspendLayout();
+            this.splitContainer3.Panel2.SuspendLayout();
+            this.splitContainer3.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -106,7 +126,7 @@
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(695, 81);
+            this.groupBox1.Size = new System.Drawing.Size(982, 81);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Server";
@@ -117,7 +137,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtConnectionString.Location = new System.Drawing.Point(148, 43);
             this.txtConnectionString.Name = "txtConnectionString";
-            this.txtConnectionString.Size = new System.Drawing.Size(534, 22);
+            this.txtConnectionString.Size = new System.Drawing.Size(821, 22);
             this.txtConnectionString.TabIndex = 3;
             // 
             // label6
@@ -135,7 +155,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtURL.Location = new System.Drawing.Point(148, 15);
             this.txtURL.Name = "txtURL";
-            this.txtURL.Size = new System.Drawing.Size(534, 22);
+            this.txtURL.Size = new System.Drawing.Size(821, 22);
             this.txtURL.TabIndex = 1;
             // 
             // label1
@@ -153,7 +173,7 @@
             this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox2.Location = new System.Drawing.Point(0, 81);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(695, 641);
+            this.groupBox2.Size = new System.Drawing.Size(982, 514);
             this.groupBox2.TabIndex = 1;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Operation";
@@ -168,39 +188,62 @@
             this.tabControl1.Location = new System.Drawing.Point(3, 18);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(689, 620);
+            this.tabControl1.Size = new System.Drawing.Size(976, 493);
             this.tabControl1.TabIndex = 0;
             // 
             // tbQuery
             // 
-            this.tbQuery.Controls.Add(this.panel6);
-            this.tbQuery.Controls.Add(this.pnlQuery);
+            this.tbQuery.Controls.Add(this.splitContainer3);
             this.tbQuery.Location = new System.Drawing.Point(4, 25);
             this.tbQuery.Name = "tbQuery";
             this.tbQuery.Padding = new System.Windows.Forms.Padding(3);
-            this.tbQuery.Size = new System.Drawing.Size(681, 591);
+            this.tbQuery.Size = new System.Drawing.Size(968, 464);
             this.tbQuery.TabIndex = 0;
             this.tbQuery.Text = "Query";
             this.tbQuery.UseVisualStyleBackColor = true;
             // 
-            // panel6
+            // pnlQueryResults
             // 
-            this.panel6.Controls.Add(this.dgQueryResults);
-            this.panel6.Controls.Add(this.panel7);
-            this.panel6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel6.Location = new System.Drawing.Point(3, 368);
-            this.panel6.Name = "panel6";
-            this.panel6.Size = new System.Drawing.Size(675, 220);
-            this.panel6.TabIndex = 1;
+            this.pnlQueryResults.Controls.Add(this.dgQueryResults);
+            this.pnlQueryResults.Controls.Add(this.panel7);
+            this.pnlQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlQueryResults.Location = new System.Drawing.Point(0, 0);
+            this.pnlQueryResults.Name = "pnlQueryResults";
+            this.pnlQueryResults.Size = new System.Drawing.Size(555, 458);
+            this.pnlQueryResults.TabIndex = 1;
             // 
             // dgQueryResults
             // 
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgQueryResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgQueryResults.DefaultCellStyle = dataGridViewCellStyle2;
             this.dgQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgQueryResults.Location = new System.Drawing.Point(0, 35);
+            this.dgQueryResults.Location = new System.Drawing.Point(0, 23);
             this.dgQueryResults.Name = "dgQueryResults";
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
             this.dgQueryResults.RowTemplate.Height = 24;
-            this.dgQueryResults.Size = new System.Drawing.Size(675, 185);
+            this.dgQueryResults.Size = new System.Drawing.Size(555, 435);
             this.dgQueryResults.TabIndex = 1;
             // 
             // panel7
@@ -210,13 +253,13 @@
             this.panel7.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel7.Location = new System.Drawing.Point(0, 0);
             this.panel7.Name = "panel7";
-            this.panel7.Size = new System.Drawing.Size(675, 35);
+            this.panel7.Size = new System.Drawing.Size(555, 23);
             this.panel7.TabIndex = 0;
             // 
             // lblQueryTime
             // 
             this.lblQueryTime.AutoSize = true;
-            this.lblQueryTime.Location = new System.Drawing.Point(3, 10);
+            this.lblQueryTime.Location = new System.Drawing.Point(2, 3);
             this.lblQueryTime.Name = "lblQueryTime";
             this.lblQueryTime.Size = new System.Drawing.Size(60, 17);
             this.lblQueryTime.TabIndex = 1;
@@ -225,7 +268,7 @@
             // btnQueryExecute
             // 
             this.btnQueryExecute.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnQueryExecute.Location = new System.Drawing.Point(597, 7);
+            this.btnQueryExecute.Location = new System.Drawing.Point(477, 0);
             this.btnQueryExecute.Name = "btnQueryExecute";
             this.btnQueryExecute.Size = new System.Drawing.Size(75, 23);
             this.btnQueryExecute.TabIndex = 0;
@@ -252,19 +295,20 @@
             this.pnlQuery.Controls.Add(this.txtQueryWithExpression);
             this.pnlQuery.Controls.Add(this.label7);
             this.pnlQuery.Controls.Add(this.txtQueryWithIdentifier);
-            this.pnlQuery.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlQuery.Location = new System.Drawing.Point(3, 3);
+            this.pnlQuery.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlQuery.Location = new System.Drawing.Point(0, 0);
             this.pnlQuery.Name = "pnlQuery";
-            this.pnlQuery.Size = new System.Drawing.Size(675, 365);
+            this.pnlQuery.Size = new System.Drawing.Size(403, 458);
             this.pnlQuery.TabIndex = 0;
             // 
             // txtQueryOrderBy
             // 
             this.txtQueryOrderBy.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtQueryOrderBy.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryOrderBy.Location = new System.Drawing.Point(87, 337);
             this.txtQueryOrderBy.Name = "txtQueryOrderBy";
-            this.txtQueryOrderBy.Size = new System.Drawing.Size(583, 22);
+            this.txtQueryOrderBy.Size = new System.Drawing.Size(311, 28);
             this.txtQueryOrderBy.TabIndex = 16;
             // 
             // label15
@@ -280,9 +324,10 @@
             // 
             this.txtQueryHaving.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtQueryHaving.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryHaving.Location = new System.Drawing.Point(87, 309);
             this.txtQueryHaving.Name = "txtQueryHaving";
-            this.txtQueryHaving.Size = new System.Drawing.Size(583, 22);
+            this.txtQueryHaving.Size = new System.Drawing.Size(311, 28);
             this.txtQueryHaving.TabIndex = 14;
             // 
             // label14
@@ -298,9 +343,10 @@
             // 
             this.txtQueryGroupBy.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtQueryGroupBy.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryGroupBy.Location = new System.Drawing.Point(87, 284);
             this.txtQueryGroupBy.Name = "txtQueryGroupBy";
-            this.txtQueryGroupBy.Size = new System.Drawing.Size(583, 22);
+            this.txtQueryGroupBy.Size = new System.Drawing.Size(311, 28);
             this.txtQueryGroupBy.TabIndex = 12;
             // 
             // label13
@@ -326,12 +372,13 @@
             this.txtQueryWhere.AcceptsReturn = true;
             this.txtQueryWhere.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtQueryWhere.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryWhere.HideSelection = false;
             this.txtQueryWhere.Location = new System.Drawing.Point(87, 218);
             this.txtQueryWhere.Multiline = true;
             this.txtQueryWhere.Name = "txtQueryWhere";
             this.txtQueryWhere.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtQueryWhere.Size = new System.Drawing.Size(583, 57);
+            this.txtQueryWhere.Size = new System.Drawing.Size(311, 57);
             this.txtQueryWhere.TabIndex = 9;
             // 
             // label11
@@ -348,19 +395,20 @@
             this.txtQueryFrom.AcceptsReturn = true;
             this.txtQueryFrom.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtQueryFrom.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryFrom.HideSelection = false;
             this.txtQueryFrom.Location = new System.Drawing.Point(87, 155);
             this.txtQueryFrom.Multiline = true;
             this.txtQueryFrom.Name = "txtQueryFrom";
             this.txtQueryFrom.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtQueryFrom.Size = new System.Drawing.Size(583, 57);
+            this.txtQueryFrom.Size = new System.Drawing.Size(311, 57);
             this.txtQueryFrom.TabIndex = 7;
             // 
             // label10
             // 
             this.label10.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(662, 7);
+            this.label10.Location = new System.Drawing.Point(390, 7);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(13, 17);
             this.label10.TabIndex = 6;
@@ -371,12 +419,13 @@
             this.txtQuerySelect.AcceptsReturn = true;
             this.txtQuerySelect.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtQuerySelect.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQuerySelect.HideSelection = false;
             this.txtQuerySelect.Location = new System.Drawing.Point(87, 92);
             this.txtQuerySelect.Multiline = true;
             this.txtQuerySelect.Name = "txtQuerySelect";
             this.txtQuerySelect.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtQuerySelect.Size = new System.Drawing.Size(583, 57);
+            this.txtQuerySelect.Size = new System.Drawing.Size(311, 57);
             this.txtQuerySelect.TabIndex = 5;
             // 
             // label9
@@ -402,11 +451,12 @@
             this.txtQueryWithExpression.AcceptsReturn = true;
             this.txtQueryWithExpression.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtQueryWithExpression.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryWithExpression.Location = new System.Drawing.Point(212, 4);
             this.txtQueryWithExpression.Multiline = true;
             this.txtQueryWithExpression.Name = "txtQueryWithExpression";
             this.txtQueryWithExpression.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtQueryWithExpression.Size = new System.Drawing.Size(444, 82);
+            this.txtQueryWithExpression.Size = new System.Drawing.Size(172, 82);
             this.txtQueryWithExpression.TabIndex = 2;
             // 
             // label7
@@ -420,9 +470,10 @@
             // 
             // txtQueryWithIdentifier
             // 
+            this.txtQueryWithIdentifier.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryWithIdentifier.Location = new System.Drawing.Point(87, 4);
             this.txtQueryWithIdentifier.Name = "txtQueryWithIdentifier";
-            this.txtQueryWithIdentifier.Size = new System.Drawing.Size(78, 22);
+            this.txtQueryWithIdentifier.Size = new System.Drawing.Size(78, 28);
             this.txtQueryWithIdentifier.TabIndex = 0;
             // 
             // tbLog
@@ -430,43 +481,64 @@
             this.tbLog.Location = new System.Drawing.Point(4, 25);
             this.tbLog.Name = "tbLog";
             this.tbLog.Padding = new System.Windows.Forms.Padding(3);
-            this.tbLog.Size = new System.Drawing.Size(681, 591);
+            this.tbLog.Size = new System.Drawing.Size(968, 464);
             this.tbLog.TabIndex = 2;
             this.tbLog.Text = "Log";
             this.tbLog.UseVisualStyleBackColor = true;
             // 
             // tbModify
             // 
-            this.tbModify.Controls.Add(this.panel4);
-            this.tbModify.Controls.Add(this.pnlModifyQuery);
-            this.tbModify.Controls.Add(this.pnlModifyCommand);
-            this.tbModify.Controls.Add(this.panel1);
+            this.tbModify.Controls.Add(this.splitContainer1);
             this.tbModify.Location = new System.Drawing.Point(4, 25);
             this.tbModify.Name = "tbModify";
             this.tbModify.Padding = new System.Windows.Forms.Padding(3);
-            this.tbModify.Size = new System.Drawing.Size(681, 591);
+            this.tbModify.Size = new System.Drawing.Size(968, 464);
             this.tbModify.TabIndex = 1;
             this.tbModify.Text = "Modify";
             this.tbModify.UseVisualStyleBackColor = true;
             // 
-            // panel4
+            // pnlModifyResults
             // 
-            this.panel4.Controls.Add(this.dgModifyResults);
-            this.panel4.Controls.Add(this.panel8);
-            this.panel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel4.Location = new System.Drawing.Point(3, 358);
-            this.panel4.Name = "panel4";
-            this.panel4.Size = new System.Drawing.Size(675, 230);
-            this.panel4.TabIndex = 6;
+            this.pnlModifyResults.Controls.Add(this.dgModifyResults);
+            this.pnlModifyResults.Controls.Add(this.panel8);
+            this.pnlModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlModifyResults.Location = new System.Drawing.Point(0, 0);
+            this.pnlModifyResults.Name = "pnlModifyResults";
+            this.pnlModifyResults.Size = new System.Drawing.Size(555, 458);
+            this.pnlModifyResults.TabIndex = 6;
             // 
             // dgModifyResults
             // 
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
             this.dgModifyResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle5.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle5.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle5.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgModifyResults.DefaultCellStyle = dataGridViewCellStyle5;
             this.dgModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgModifyResults.Location = new System.Drawing.Point(0, 39);
+            this.dgModifyResults.Location = new System.Drawing.Point(0, 23);
             this.dgModifyResults.Name = "dgModifyResults";
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
             this.dgModifyResults.RowTemplate.Height = 24;
-            this.dgModifyResults.Size = new System.Drawing.Size(675, 191);
+            this.dgModifyResults.Size = new System.Drawing.Size(555, 435);
             this.dgModifyResults.TabIndex = 1;
             // 
             // panel8
@@ -476,13 +548,22 @@
             this.panel8.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel8.Location = new System.Drawing.Point(0, 0);
             this.panel8.Name = "panel8";
-            this.panel8.Size = new System.Drawing.Size(675, 39);
+            this.panel8.Size = new System.Drawing.Size(555, 23);
             this.panel8.TabIndex = 0;
+            // 
+            // lblModifyTime
+            // 
+            this.lblModifyTime.AutoSize = true;
+            this.lblModifyTime.Location = new System.Drawing.Point(2, 3);
+            this.lblModifyTime.Name = "lblModifyTime";
+            this.lblModifyTime.Size = new System.Drawing.Size(60, 17);
+            this.lblModifyTime.TabIndex = 2;
+            this.lblModifyTime.Text = "             ";
             // 
             // btnModifyCommit
             // 
             this.btnModifyCommit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnModifyCommit.Location = new System.Drawing.Point(596, 7);
+            this.btnModifyCommit.Location = new System.Drawing.Point(477, 0);
             this.btnModifyCommit.Name = "btnModifyCommit";
             this.btnModifyCommit.Size = new System.Drawing.Size(75, 23);
             this.btnModifyCommit.TabIndex = 0;
@@ -495,10 +576,10 @@
             // 
             this.pnlModifyQuery.Controls.Add(this.txtModifyQuery);
             this.pnlModifyQuery.Controls.Add(this.label5);
-            this.pnlModifyQuery.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlModifyQuery.Location = new System.Drawing.Point(3, 210);
+            this.pnlModifyQuery.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlModifyQuery.Location = new System.Drawing.Point(0, 0);
             this.pnlModifyQuery.Name = "pnlModifyQuery";
-            this.pnlModifyQuery.Size = new System.Drawing.Size(675, 148);
+            this.pnlModifyQuery.Size = new System.Drawing.Size(403, 133);
             this.pnlModifyQuery.TabIndex = 5;
             // 
             // txtModifyQuery
@@ -507,12 +588,13 @@
             this.txtModifyQuery.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtModifyQuery.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtModifyQuery.HideSelection = false;
             this.txtModifyQuery.Location = new System.Drawing.Point(0, 23);
             this.txtModifyQuery.Multiline = true;
             this.txtModifyQuery.Name = "txtModifyQuery";
             this.txtModifyQuery.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtModifyQuery.Size = new System.Drawing.Size(675, 122);
+            this.txtModifyQuery.Size = new System.Drawing.Size(403, 107);
             this.txtModifyQuery.TabIndex = 2;
             // 
             // label5
@@ -528,10 +610,10 @@
             // 
             this.pnlModifyCommand.Controls.Add(this.txtModifyCommand);
             this.pnlModifyCommand.Controls.Add(this.label4);
-            this.pnlModifyCommand.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlModifyCommand.Location = new System.Drawing.Point(3, 62);
+            this.pnlModifyCommand.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlModifyCommand.Location = new System.Drawing.Point(0, 0);
             this.pnlModifyCommand.Name = "pnlModifyCommand";
-            this.pnlModifyCommand.Size = new System.Drawing.Size(675, 148);
+            this.pnlModifyCommand.Size = new System.Drawing.Size(403, 262);
             this.pnlModifyCommand.TabIndex = 4;
             // 
             // txtModifyCommand
@@ -540,12 +622,13 @@
             this.txtModifyCommand.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtModifyCommand.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtModifyCommand.HideSelection = false;
             this.txtModifyCommand.Location = new System.Drawing.Point(0, 23);
             this.txtModifyCommand.Multiline = true;
             this.txtModifyCommand.Name = "txtModifyCommand";
             this.txtModifyCommand.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtModifyCommand.Size = new System.Drawing.Size(675, 122);
+            this.txtModifyCommand.Size = new System.Drawing.Size(403, 236);
             this.txtModifyCommand.TabIndex = 1;
             // 
             // label4
@@ -553,9 +636,9 @@
             this.label4.AutoSize = true;
             this.label4.Location = new System.Drawing.Point(0, 3);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(105, 17);
+            this.label4.Size = new System.Drawing.Size(185, 17);
             this.label4.TabIndex = 0;
-            this.label4.Text = "SQL command:";
+            this.label4.Text = "SQL data update command:";
             // 
             // panel1
             // 
@@ -565,18 +648,18 @@
             this.panel1.Controls.Add(this.btnModifyBrowsePrivateKeyPath);
             this.panel1.Controls.Add(this.txtModifyPrivateKeyPath);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(3, 3);
+            this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(675, 59);
+            this.panel1.Size = new System.Drawing.Size(403, 59);
             this.panel1.TabIndex = 3;
             // 
             // txtModifyPassphrase
             // 
             this.txtModifyPassphrase.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtModifyPassphrase.Location = new System.Drawing.Point(208, 31);
+            this.txtModifyPassphrase.Location = new System.Drawing.Point(110, 31);
             this.txtModifyPassphrase.Name = "txtModifyPassphrase";
-            this.txtModifyPassphrase.Size = new System.Drawing.Size(426, 22);
+            this.txtModifyPassphrase.Size = new System.Drawing.Size(252, 22);
             this.txtModifyPassphrase.TabIndex = 4;
             this.txtModifyPassphrase.UseSystemPasswordChar = true;
             // 
@@ -594,14 +677,14 @@
             this.label2.AutoSize = true;
             this.label2.Location = new System.Drawing.Point(0, 6);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(200, 17);
+            this.label2.Size = new System.Drawing.Size(104, 17);
             this.label2.TabIndex = 0;
-            this.label2.Text = "OpenSSL RSA private key file:";
+            this.label2.Text = "Private key file:";
             // 
             // btnModifyBrowsePrivateKeyPath
             // 
             this.btnModifyBrowsePrivateKeyPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnModifyBrowsePrivateKeyPath.Location = new System.Drawing.Point(641, 3);
+            this.btnModifyBrowsePrivateKeyPath.Location = new System.Drawing.Point(369, 3);
             this.btnModifyBrowsePrivateKeyPath.Name = "btnModifyBrowsePrivateKeyPath";
             this.btnModifyBrowsePrivateKeyPath.Size = new System.Drawing.Size(31, 23);
             this.btnModifyBrowsePrivateKeyPath.TabIndex = 2;
@@ -613,9 +696,9 @@
             // 
             this.txtModifyPrivateKeyPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtModifyPrivateKeyPath.Location = new System.Drawing.Point(208, 3);
+            this.txtModifyPrivateKeyPath.Location = new System.Drawing.Point(110, 3);
             this.txtModifyPrivateKeyPath.Name = "txtModifyPrivateKeyPath";
-            this.txtModifyPrivateKeyPath.Size = new System.Drawing.Size(425, 22);
+            this.txtModifyPrivateKeyPath.Size = new System.Drawing.Size(251, 22);
             this.txtModifyPrivateKeyPath.TabIndex = 1;
             // 
             // tbKeys
@@ -623,7 +706,7 @@
             this.tbKeys.Location = new System.Drawing.Point(4, 25);
             this.tbKeys.Name = "tbKeys";
             this.tbKeys.Padding = new System.Windows.Forms.Padding(3);
-            this.tbKeys.Size = new System.Drawing.Size(681, 591);
+            this.tbKeys.Size = new System.Drawing.Size(968, 464);
             this.tbKeys.TabIndex = 3;
             this.tbKeys.Text = "Key Management";
             this.tbKeys.UseVisualStyleBackColor = true;
@@ -633,20 +716,73 @@
             this.dlgImportKey.FileName = "id_rsa";
             this.dlgImportKey.Title = "Import OpenSSL RSA private key";
             // 
-            // lblModifyTime
+            // panel2
             // 
-            this.lblModifyTime.AutoSize = true;
-            this.lblModifyTime.Location = new System.Drawing.Point(3, 10);
-            this.lblModifyTime.Name = "lblModifyTime";
-            this.lblModifyTime.Size = new System.Drawing.Size(60, 17);
-            this.lblModifyTime.TabIndex = 2;
-            this.lblModifyTime.Text = "             ";
+            this.panel2.Controls.Add(this.splitContainer2);
+            this.panel2.Controls.Add(this.panel1);
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel2.Location = new System.Drawing.Point(0, 0);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(403, 458);
+            this.panel2.TabIndex = 7;
+            // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Location = new System.Drawing.Point(3, 3);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.panel2);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.pnlModifyResults);
+            this.splitContainer1.Size = new System.Drawing.Size(962, 458);
+            this.splitContainer1.SplitterDistance = 403;
+            this.splitContainer1.TabIndex = 8;
+            // 
+            // splitContainer2
+            // 
+            this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer2.Location = new System.Drawing.Point(0, 59);
+            this.splitContainer2.Name = "splitContainer2";
+            this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitContainer2.Panel1
+            // 
+            this.splitContainer2.Panel1.Controls.Add(this.pnlModifyCommand);
+            // 
+            // splitContainer2.Panel2
+            // 
+            this.splitContainer2.Panel2.Controls.Add(this.pnlModifyQuery);
+            this.splitContainer2.Size = new System.Drawing.Size(403, 399);
+            this.splitContainer2.SplitterDistance = 262;
+            this.splitContainer2.TabIndex = 6;
+            // 
+            // splitContainer3
+            // 
+            this.splitContainer3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer3.Location = new System.Drawing.Point(3, 3);
+            this.splitContainer3.Name = "splitContainer3";
+            // 
+            // splitContainer3.Panel1
+            // 
+            this.splitContainer3.Panel1.Controls.Add(this.pnlQuery);
+            // 
+            // splitContainer3.Panel2
+            // 
+            this.splitContainer3.Panel2.Controls.Add(this.pnlQueryResults);
+            this.splitContainer3.Size = new System.Drawing.Size(962, 458);
+            this.splitContainer3.SplitterDistance = 403;
+            this.splitContainer3.TabIndex = 2;
             // 
             // GUIClient
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(695, 722);
+            this.ClientSize = new System.Drawing.Size(982, 595);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Name = "GUIClient";
@@ -656,14 +792,14 @@
             this.groupBox2.ResumeLayout(false);
             this.tabControl1.ResumeLayout(false);
             this.tbQuery.ResumeLayout(false);
-            this.panel6.ResumeLayout(false);
+            this.pnlQueryResults.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).EndInit();
             this.panel7.ResumeLayout(false);
             this.panel7.PerformLayout();
             this.pnlQuery.ResumeLayout(false);
             this.pnlQuery.PerformLayout();
             this.tbModify.ResumeLayout(false);
-            this.panel4.ResumeLayout(false);
+            this.pnlModifyResults.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgModifyResults)).EndInit();
             this.panel8.ResumeLayout(false);
             this.panel8.PerformLayout();
@@ -673,6 +809,16 @@
             this.pnlModifyCommand.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            this.panel2.ResumeLayout(false);
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            this.splitContainer1.ResumeLayout(false);
+            this.splitContainer2.Panel1.ResumeLayout(false);
+            this.splitContainer2.Panel2.ResumeLayout(false);
+            this.splitContainer2.ResumeLayout(false);
+            this.splitContainer3.Panel1.ResumeLayout(false);
+            this.splitContainer3.Panel2.ResumeLayout(false);
+            this.splitContainer3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -696,14 +842,14 @@
         private System.Windows.Forms.Panel pnlModifyCommand;
         private System.Windows.Forms.TextBox txtModifyCommand;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Panel panel4;
+        private System.Windows.Forms.Panel pnlModifyResults;
         private System.Windows.Forms.Panel pnlModifyQuery;
         private System.Windows.Forms.TextBox txtModifyQuery;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.TextBox txtConnectionString;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TabPage tbKeys;
-        private System.Windows.Forms.Panel panel6;
+        private System.Windows.Forms.Panel pnlQueryResults;
         private System.Windows.Forms.Panel pnlQuery;
         private System.Windows.Forms.TextBox txtQuerySelect;
         private System.Windows.Forms.Label label9;
@@ -731,5 +877,9 @@
         private System.Windows.Forms.Label lblQueryTime;
         private System.Windows.Forms.OpenFileDialog dlgImportKey;
         private System.Windows.Forms.Label lblModifyTime;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.SplitContainer splitContainer2;
+        private System.Windows.Forms.SplitContainer splitContainer3;
     }
 }
