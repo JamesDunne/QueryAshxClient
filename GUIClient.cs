@@ -437,6 +437,7 @@ namespace QueryAshx
             public DataGridView dgResults;
             public Action<int> reportQueryTime;
             public Action<Dictionary<string, object>> handleError;
+            public Action success;
         }
 
         private void responseCallbackUpdateGridResults(IAsyncResult iar)
@@ -536,6 +537,8 @@ namespace QueryAshx
                     column.SortMode = DataGridViewColumnSortMode.NotSortable;
                 }
             });
+
+            st.success();
         }
 
         private UriBuilder getBaseURL()
@@ -645,6 +648,10 @@ namespace QueryAshx
                 {
                     string message = dict.GetValueOrDefaultAs("message", o => (string)o);
                     msgbox(message);
+                },
+                success = () =>
+                {
+                    persistSettings();
                 }
             };
 
@@ -764,6 +771,10 @@ namespace QueryAshx
                 {
                     string message = dict.GetValueOrDefaultAs("message", o => (string)o);
                     msgbox(message);
+                },
+                success = () =>
+                {
+                    persistSettings();
                 }
             };
 
@@ -771,7 +782,8 @@ namespace QueryAshx
             req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
         }
 
-        private readonly string recentSettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "recent.json");
+        private string myAppData { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Path.Combine("bittwiddlers.org", "QueryAshxClient")); } }
+        private string recentSettingsPath { get { return Path.Combine(myAppData, "recent.json"); } }
 
         private void GUIClient_Load(object sender, EventArgs e)
         {
@@ -804,6 +816,16 @@ namespace QueryAshx
 
         private void persistSettings()
         {
+            if (!String.IsNullOrEmpty(txtURL.Text))
+            {
+                if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
+                    txtURL.Items.Add(txtURL.Text);
+            }
+            if (!String.IsNullOrEmpty(txtConnectionString.Text))
+            {
+                if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
+                    txtConnectionString.Items.Add(txtConnectionString.Text);
+            }
             var dict = new Dictionary<string, object> {
                 { "urls", (
                     from s in txtURL.Items.OfType<string>()
@@ -818,27 +840,8 @@ namespace QueryAshx
                     where strim.Length > 0
                     select strim).ToArray() }
             };
+            if (!Directory.Exists(myAppData)) Directory.CreateDirectory(myAppData);
             serializeJSONFile(recentSettingsPath, dict);
-        }
-
-        private void txtURL_Leave(object sender, EventArgs e)
-        {
-            if (!String.IsNullOrEmpty(txtURL.Text))
-            {
-                if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
-                    txtURL.Items.Add(txtURL.Text);
-            }
-            persistSettings();
-        }
-
-        private void txtConnectionString_Leave(object sender, EventArgs e)
-        {
-            if (!String.IsNullOrEmpty(txtConnectionString.Text))
-            {
-                if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
-                    txtConnectionString.Items.Add(txtConnectionString.Text);
-            }
-            persistSettings();
         }
     }
 
