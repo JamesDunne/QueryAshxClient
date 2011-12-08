@@ -1,0 +1,9 @@
+*.config
+*.sln
+*.suo
+Properties/
+bin/
+obj/
+*.user
+*.csproj
+.gitignore
