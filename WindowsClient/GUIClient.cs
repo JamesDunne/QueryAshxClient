@@ -604,6 +604,101 @@ namespace QueryAshx
             return MessageBox.Show(this, message, "query.ashx", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        private bool isCommitEnabled = false;
+
+        private void setCommitEnabled(bool enabled)
+        {
+            if (enabled != isCommitEnabled)
+            {
+                if (enabled)
+                {
+                    btnModifyCommit.Enabled = true;
+                }
+                else
+                {
+                    btnModifyCommit.Enabled = false;
+                }
+            }
+
+            isCommitEnabled = enabled;
+        }
+
+        private void persistSettings()
+        {
+            if (!String.IsNullOrEmpty(txtURL.Text))
+            {
+                if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
+                    txtURL.Items.Add(txtURL.Text);
+            }
+            if (!String.IsNullOrEmpty(txtConnectionString.Text))
+            {
+                if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
+                    txtConnectionString.Items.Add(txtConnectionString.Text);
+            }
+            var dict = new Dictionary<string, object> {
+                { "urls", (
+                    from s in txtURL.Items.OfType<string>()
+                    where s != null
+                    let strim = s.Trim()
+                    where strim.Length > 0
+                    select strim).ToArray()
+                },
+                { "cs", (
+                    from s in txtConnectionString.Items.OfType<string>()
+                    where s != null
+                    let strim = s.Trim()
+                    where strim.Length > 0
+                    select strim).ToArray()
+                },
+                { "ppk", txtModifyPrivateKeyPath.Text.Trim() }
+            };
+            if (!Directory.Exists(myAppData)) Directory.CreateDirectory(myAppData);
+            writeJSON(recentSettingsPath, dict);
+        }
+
+        /// <summary>
+        /// Form load
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void GUIClient_Load(object sender, EventArgs e)
+        {
+            var dict = loadJSON(recentSettingsPath);
+
+            // Load recent URLs:
+            var urls = dict.GetValueOrDefaultAs("urls", o => (ArrayList)o, () => new ArrayList(0));
+            txtURL.Items.Clear();
+            txtURL.Items.AddRange((
+                from s in urls.OfType<string>()
+                where s != null
+                let strim = s.Trim()
+                where strim.Length > 0
+                select strim).ToArray());
+            if (urls.Count > 0) txtURL.SelectedIndex = 0;
+
+            // Load recent connection strings:
+            var connectionStrings = dict.GetValueOrDefaultAs("cs", o => (ArrayList)o, () => new ArrayList(0));
+            txtConnectionString.Items.Clear();
+            txtConnectionString.Items.AddRange((
+                from s in connectionStrings.OfType<string>()
+                where s != null
+                let strim = s.Trim()
+                where strim.Length > 0
+                select strim).ToArray());
+            if (connectionStrings.Count > 0) txtConnectionString.SelectedIndex = 0;
+
+            // Load the private key file path:
+            txtModifyPrivateKeyPath.Text = dict.GetValueOrDefaultAs("ppk", o => (string)o, String.Empty);
+        }
+
+        private void btnModifyBrowsePrivateKeyPath_Click(object sender, EventArgs e)
+        {
+            if (dlgImportKey.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                return;
+
+            txtModifyPrivateKeyPath.Text = dlgImportKey.FileName;
+        }
+
         /// <summary>
         /// Executes the SQL query from the "Query" tab and renders the results.
         /// </summary>
@@ -680,15 +775,18 @@ namespace QueryAshx
             req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
         }
 
-        private void btnModifyBrowsePrivateKeyPath_Click(object sender, EventArgs e)
+        private void btnModifyTest_Click(object sender, EventArgs e)
         {
-            if (dlgImportKey.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                return;
-
-            txtModifyPrivateKeyPath.Text = dlgImportKey.FileName;
+            doMutate(false);
         }
 
         private void btnModifyCommit_Click(object sender, EventArgs e)
+        {
+            if (!isCommitEnabled) return;
+            doMutate(true);
+        }
+
+        private void doMutate(bool commitMode)
         {
             #region Validation
 
@@ -768,19 +866,25 @@ namespace QueryAshx
                 { "cs", txtConnectionString.Text.Trim() }
             };
 
-            // TODO: add a "1" mode for commit!
-            // Have the commit button enable only if this function successfully returns results.
-            // Disable the button if anything changes on the form.
-
             // Construct the query string for the request:
-            reqUrib.Query = UrlEncodeParameters(new Dictionary<string, string> { { "mu", "0" } });
+            reqUrib.Query = UrlEncodeParameters(new Dictionary<string, string> { { "mu", commitMode ? "1" : "0" } });
 
-            var req = createPOSTRequestFormEncoded(reqUrib.Uri.AbsoluteUri, "application/json", postData);
+            HttpWebRequest req;
+            try
+            {
+                req = createPOSTRequestFormEncoded(reqUrib.Uri.AbsoluteUri, "application/json", postData);
+            }
+            catch (WebException wex)
+            {
+                msgbox(wex.Message);
+                return;
+            }
 
             // Disable reentrancy:
             pnlModifyCommand.Enabled = false;
             pnlModifyQuery.Enabled = false;
-            btnModifyCommit.Enabled = false;
+            if (commitMode) btnModifyCommit.Enabled = false;
+            btnModifyTest.Enabled = false;
 
             var asyncst = new AsyncUpdateViewState()
             {
@@ -789,7 +893,8 @@ namespace QueryAshx
                 {
                     pnlModifyCommand.Enabled = true;
                     pnlModifyQuery.Enabled = true;
-                    btnModifyCommit.Enabled = true;
+                    if (commitMode) btnModifyCommit.Enabled = true;
+                    btnModifyTest.Enabled = true;
                 },
                 dgResults = dgModifyResults,
                 reportQueryTime = (int msec) =>
@@ -803,6 +908,8 @@ namespace QueryAshx
                 },
                 success = () =>
                 {
+                    // Set isCommitEnabled to true and enable the Commit button:
+                    UIMarshal(() => setCommitEnabled(true));
                 }
             };
 
@@ -810,70 +917,38 @@ namespace QueryAshx
             req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
         }
 
-        private void GUIClient_Load(object sender, EventArgs e)
-        {
-            var dict = loadJSON(recentSettingsPath);
-
-            // Load recent URLs:
-            var urls = dict.GetValueOrDefaultAs("urls", o => (ArrayList)o, () => new ArrayList(0));
-            txtURL.Items.Clear();
-            txtURL.Items.AddRange((
-                from s in urls.OfType<string>()
-                where s != null
-                let strim = s.Trim()
-                where strim.Length > 0
-                select strim).ToArray());
-            if (urls.Count > 0) txtURL.SelectedIndex = 0;
-
-            // Load recent connection strings:
-            var connectionStrings = dict.GetValueOrDefaultAs("cs", o => (ArrayList)o, () => new ArrayList(0));
-            txtConnectionString.Items.Clear();
-            txtConnectionString.Items.AddRange((
-                from s in connectionStrings.OfType<string>()
-                where s != null
-                let strim = s.Trim()
-                where strim.Length > 0
-                select strim).ToArray());
-            if (connectionStrings.Count > 0) txtConnectionString.SelectedIndex = 0;
-
-            // Load the private key file path:
-            txtModifyPrivateKeyPath.Text = dict.GetValueOrDefaultAs("ppk", o => (string)o, String.Empty);
-        }
-
         #endregion
 
-        private void persistSettings()
+        private void txtModifyCommand_TextChanged(object sender, EventArgs e)
         {
-            if (!String.IsNullOrEmpty(txtURL.Text))
-            {
-                if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
-                    txtURL.Items.Add(txtURL.Text);
-            }
-            if (!String.IsNullOrEmpty(txtConnectionString.Text))
-            {
-                if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
-                    txtConnectionString.Items.Add(txtConnectionString.Text);
-            }
-            var dict = new Dictionary<string, object> {
-                { "urls", (
-                    from s in txtURL.Items.OfType<string>()
-                    where s != null
-                    let strim = s.Trim()
-                    where strim.Length > 0
-                    select strim).ToArray()
-                },
-                { "cs", (
-                    from s in txtConnectionString.Items.OfType<string>()
-                    where s != null
-                    let strim = s.Trim()
-                    where strim.Length > 0
-                    select strim).ToArray()
-                },
-                { "ppk", txtModifyPrivateKeyPath.Text.Trim() }
-            };
-            if (!Directory.Exists(myAppData)) Directory.CreateDirectory(myAppData);
-            writeJSON(recentSettingsPath, dict);
+            setCommitEnabled(false);
         }
+
+        private void txtModifyQuery_TextChanged(object sender, EventArgs e)
+        {
+            setCommitEnabled(false);
+        }
+
+        private void txtConnectionString_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            setCommitEnabled(false);
+        }
+
+        private void txtURL_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            setCommitEnabled(false);
+        }
+
+        private void txtURL_TextChanged(object sender, EventArgs e)
+        {
+            setCommitEnabled(false);
+        }
+
+        private void txtConnectionString_TextChanged(object sender, EventArgs e)
+        {
+            setCommitEnabled(false);
+        }
+
     }
 
     internal static class ExtensionMethods
