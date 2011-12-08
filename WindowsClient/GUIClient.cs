@@ -424,10 +424,30 @@ namespace QueryAshx
                 uiAction();
         }
 
+        private static object convertJSONTypeToCLRType(string sqlTypeName, object jsonValue)
+        {
+            ArrayList al;
+            switch (sqlTypeName.ToLower())
+            {
+                case "varbinary":
+                case "binary":
+                case "timestamp":
+                    al = (ArrayList)jsonValue;
+                    return "0x" + String.Join(String.Empty, al.OfType<object>().Select(o => ((int)o).ToString("X2")).ToArray());
+                default: return jsonValue;
+            }
+        }
+
         private static Type getCLRTypeForSQLType(string sqlTypeName)
         {
-            // TODO: complete me!
-            return typeof(string);
+            switch (sqlTypeName.ToLower())
+            {
+                case "varbinary":
+                case "binary":
+                case "timestamp":
+                    return typeof(string);
+                default: return typeof(string);
+            }
         }
 
         private sealed class AsyncUpdateViewState
@@ -508,8 +528,12 @@ namespace QueryAshx
                 select new DataColumn(h.name, getCLRTypeForSQLType(h.sqlTypeName))
             ).ToArray();
             dt.Columns.AddRange(columns);
+            // Add row values:
             foreach (ArrayList row in alResults)
-                dt.Rows.Add(row.ToArray());
+            {
+                object[] clrValues = row.OfType<object>().Select((o, i) => convertJSONTypeToCLRType(header[i].sqlTypeName, o)).ToArray();
+                dt.Rows.Add(clrValues);
+            }
 
             // Now set up the UI on the UI thread:
             UIMarshal(() =>
