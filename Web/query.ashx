@@ -47,7 +47,7 @@ namespace AdHocQuery
         /// <summary>
         /// URL of the latest version to use for self-update feature.
         /// </summary>
-        const string LatestVersionURL = "https://raw.github.com/gist/1286172/query.ashx";
+        const string LatestVersionURL = "https://raw.github.com/JamesDunne/QueryAshxClient/master/Web/query.ashx";
 
         /// <summary>
         /// SET ROWCOUNT limit for queries.

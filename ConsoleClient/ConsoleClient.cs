@@ -7,7 +7,7 @@ using System.IO;
 using System.Net;
 using System.Web;
 
-namespace rsatest
+namespace QueryAshx
 {
     class Client
     {

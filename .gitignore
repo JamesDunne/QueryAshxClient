@@ -1,9 +1,5 @@
-*.config
-*.sln
 *.suo
-Properties/
+*.user
 bin/
 obj/
-*.user
-*.csproj
 .gitignore
