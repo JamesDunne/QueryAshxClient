@@ -376,15 +376,7 @@ namespace QueryAshx
 
         #endregion
 
-        #region Private helpers
-
-        private void UIMarshal(Action uiAction)
-        {
-            if (this.InvokeRequired)
-                this.BeginInvoke(uiAction);
-            else
-                uiAction();
-        }
+        #region JSON
 
         private static Dictionary<string, object> parseJSON(string json)
         {
@@ -405,29 +397,37 @@ namespace QueryAshx
             return json;
         }
 
-        private static Dictionary<string, object> parseJSONFile(string jsonPath)
+        private static Dictionary<string, object> loadJSON(string jsonPath)
         {
             if (!File.Exists(jsonPath)) return new Dictionary<string, object>();
             return parseJSON(File.ReadAllText(jsonPath));
         }
 
-        private static void serializeJSONFile(string jsonPath, Dictionary<string, object> values)
+        private static void writeJSON(string jsonPath, Dictionary<string, object> values)
         {
             string json = serializeJSON(values);
             File.WriteAllText(jsonPath, json, Encoding.UTF8);
+        }
+
+        #endregion
+
+        #region Private helpers
+
+        private string myAppData { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Path.Combine("bittwiddlers.org", "QueryAshxClient")); } }
+        private string recentSettingsPath { get { return Path.Combine(myAppData, "recent.json"); } }
+
+        private void UIMarshal(Action uiAction)
+        {
+            if (this.InvokeRequired)
+                this.BeginInvoke(uiAction);
+            else
+                uiAction();
         }
 
         private static Type getCLRTypeForSQLType(string sqlTypeName)
         {
             // TODO: complete me!
             return typeof(string);
-        }
-
-        private static void doubleBuffered(DataGridView dgv, bool setting)
-        {
-            Type dgvType = dgv.GetType();
-            PropertyInfo pi = dgvType.GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
-            pi.SetValue(dgv, setting, null);
         }
 
         private sealed class AsyncUpdateViewState
@@ -538,6 +538,7 @@ namespace QueryAshx
                 }
             });
 
+            // Success callback:
             st.success();
         }
 
@@ -590,6 +591,14 @@ namespace QueryAshx
 
         #region UI actions
 
+        private static void doubleBuffered(DataGridView dgv, bool setting)
+        {
+            // Sadly, this hack is required to make DataGridView even remotely usable.
+            Type dgvType = dgv.GetType();
+            PropertyInfo pi = dgvType.GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+            pi.SetValue(dgv, setting, null);
+        }
+
         private DialogResult msgbox(string message)
         {
             return MessageBox.Show(this, message, "query.ashx", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -602,15 +611,28 @@ namespace QueryAshx
         /// <param name="e"></param>
         private void btnQueryExecute_Click(object sender, EventArgs e)
         {
+            #region Validation
+
             // Try to parse the base URL:
             UriBuilder reqUrib = getBaseURL();
             if (reqUrib == null) return;
+
+            if (String.IsNullOrEmpty(txtQuerySelect.Text))
+            {
+                msgbox("SELECT is required.");
+                return;
+            }
+
+            #endregion
+
+            // Settings are good to save now:
+            persistSettings();
 
             // Construct the query string for the request:
             reqUrib.Query = UrlEncodeParameters(new Dictionary<string, string>
             {
                 { "output", "json3" },  // JSON where each row is an array of column values
-                { "no_query", "1" },    // Don't report query back
+                { "no_query", "1" },    // Don't report the composed query back to us
                 { "cs", txtConnectionString.Text.Trim() },
                 { "wi", txtQueryWithIdentifier.Text.Trim() },
                 { "we", txtQueryWithExpression.Text.Trim() },
@@ -651,11 +673,10 @@ namespace QueryAshx
                 },
                 success = () =>
                 {
-                    persistSettings();
                 }
             };
 
-            // Asynchronously fetch the response and display the results to the DataGridView:
+            // Asynchronously fetch the response and display the results to the DataGridView when complete:
             req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
         }
 
@@ -669,6 +690,8 @@ namespace QueryAshx
 
         private void btnModifyCommit_Click(object sender, EventArgs e)
         {
+            #region Validation
+
             // Try to parse the base URL:
             UriBuilder reqUrib = getBaseURL();
             if (reqUrib == null) return;
@@ -686,6 +709,33 @@ namespace QueryAshx
                 return;
             }
 
+            // Load the lines from the private key file:
+            string[] openSSLprivateKey = File.ReadAllLines(privateKeyPath);
+
+            // Decrypt the private key file, prompting for a passphrase if encrypted:
+            string msgboxMessage = "Either failed to read private key or passphrase is incorrect!";
+            RSAParameters key;
+            if (!privkeyFromOpenSSL(
+                openSSLprivateKey,
+                () =>
+                {
+                    if (String.IsNullOrEmpty(txtModifyPassphrase.Text))
+                    {
+                        msgboxMessage = "This private key requires a passphrase. Please provide one.";
+                        return null;
+                    }
+                    return txtModifyPassphrase.Text;
+                },
+                out key)
+            )
+            {
+                msgbox(msgboxMessage);
+                return;
+            }
+
+            // Settings are good to save now:
+            persistSettings();
+
             string cmd = txtModifyCommand.Text.Trim();
             string query = txtModifyQuery.Text.Trim();
             if (String.IsNullOrEmpty(cmd) || String.IsNullOrEmpty(query))
@@ -694,35 +744,7 @@ namespace QueryAshx
                 return;
             }
 
-            // Load the lines from the private key file:
-            string[] openSSLprivateKey = File.ReadAllLines(privateKeyPath);
-
-            // TODO: add a "1" mode for commit!
-            // Have the commit button enable only if this function successfully returns results.
-            // Disable the button if anything changes on the form.
-
-            // Construct the query string for the request:
-            reqUrib.Query = UrlEncodeParameters(new Dictionary<string, string> { { "mu", "0" } });
-
-            // Decrypt the private key file, prompting for a passphrase if encrypted:
-            RSAParameters key;
-            if (!privkeyFromOpenSSL(
-                openSSLprivateKey,
-                () =>
-                {
-                    if (String.IsNullOrEmpty(txtModifyPassphrase.Text))
-                    {
-                        msgbox("This private key requires a passphrase. Please provide one.");
-                        return null;
-                    }
-                    return txtModifyPassphrase.Text;
-                },
-                out key)
-            )
-            {
-                msgbox("Either failed to read private key or passphrase is incorrect!");
-                return;
-            }
+            #endregion
 
             byte[] data = Encoding.UTF8.GetBytes(cmd + "\n" + query);
             long timestampTicks = DateTime.UtcNow.Ticks;
@@ -745,6 +767,13 @@ namespace QueryAshx
                 { "q", query },
                 { "cs", txtConnectionString.Text.Trim() }
             };
+
+            // TODO: add a "1" mode for commit!
+            // Have the commit button enable only if this function successfully returns results.
+            // Disable the button if anything changes on the form.
+
+            // Construct the query string for the request:
+            reqUrib.Query = UrlEncodeParameters(new Dictionary<string, string> { { "mu", "0" } });
 
             var req = createPOSTRequestFormEncoded(reqUrib.Uri.AbsoluteUri, "application/json", postData);
 
@@ -774,20 +803,16 @@ namespace QueryAshx
                 },
                 success = () =>
                 {
-                    persistSettings();
                 }
             };
 
-            // Asynchronously fetch the response and display the results to the DataGridView:
+            // Asynchronously fetch the response and display the results to the DataGridView when complete:
             req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
         }
 
-        private string myAppData { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Path.Combine("bittwiddlers.org", "QueryAshxClient")); } }
-        private string recentSettingsPath { get { return Path.Combine(myAppData, "recent.json"); } }
-
         private void GUIClient_Load(object sender, EventArgs e)
         {
-            var dict = parseJSONFile(recentSettingsPath);
+            var dict = loadJSON(recentSettingsPath);
 
             // Load recent URLs:
             var urls = dict.GetValueOrDefaultAs("urls", o => (ArrayList)o, () => new ArrayList(0));
@@ -847,7 +872,7 @@ namespace QueryAshx
                 { "ppk", txtModifyPrivateKeyPath.Text.Trim() }
             };
             if (!Directory.Exists(myAppData)) Directory.CreateDirectory(myAppData);
-            serializeJSONFile(recentSettingsPath, dict);
+            writeJSON(recentSettingsPath, dict);
         }
     }
 
