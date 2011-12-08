@@ -628,12 +628,12 @@ namespace QueryAshx
             if (!String.IsNullOrEmpty(txtURL.Text))
             {
                 if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
-                    txtURL.Items.Add(txtURL.Text);
+                    txtURL.Items.Insert(0, txtURL.Text);
             }
             if (!String.IsNullOrEmpty(txtConnectionString.Text))
             {
                 if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
-                    txtConnectionString.Items.Add(txtConnectionString.Text);
+                    txtConnectionString.Items.Insert(0, txtConnectionString.Text);
             }
             var dict = new Dictionary<string, object> {
                 { "urls", (

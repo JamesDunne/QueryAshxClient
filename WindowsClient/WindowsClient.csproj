@@ -80,6 +80,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DGVRowNumbers.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="GUIClient.cs">
       <SubType>Form</SubType>
     </Compile>
