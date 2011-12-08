@@ -1482,6 +1482,13 @@ $(function() {
 
             // Client is now verified to hold the private key paired with the public key they gave us.
 
+            string rowlimitStr = getFormOrQueryValue("rowlimit");
+            if ((rowlimitStr != null) && !Int32.TryParse(rowlimitStr, out rowLimit))
+            {
+                // If parsing failed, reset the rowLimit to the default:
+                rowLimit = defaultRowLimit;
+            }
+
             // NOTE: allowing any data modification command except DDL statements
             cmd = stripSQLComments(cmd);
             if (containsSQLkeywords(cmd, "commit", "rollback", "create", "drop", "begin"))
@@ -1584,6 +1591,9 @@ $(function() {
                 return;
             }
 
+            // Normalize the BASE64 formatting for consistent comparison operation:
+            newpubkey64 = pubkeyToBase64(pubkeyFromBase64(newpubkey64));
+
             // Verify that the user is who he says he is:
             string pubkey64;
             if (!verifyAuthorization(() => Convert.FromBase64String(newpubkey64), out pubkey64))
@@ -1617,6 +1627,9 @@ $(function() {
                 errorResponse(403, "Revocation public key error: " + errorMessage);
                 return;
             }
+
+            // Normalize the BASE64 formatting for consistent comparison operation:
+            newpubkey64 = pubkeyToBase64(pubkeyFromBase64(newpubkey64));
 
             // Verify that the user is who he says he is:
             string pubkey64;
@@ -1681,6 +1694,9 @@ $(function() {
                 return false;
             }
 
+            // Normalize the BASE64 formatting for consistent comparison operation:
+            pubkey64 = pubkeyToBase64(pubkeyFromBase64(pubkey64));
+
             // Check that the public key is in the authorized keys list:
             if (!isKeyAuthorized(pubkey64))
             {
@@ -1703,7 +1719,7 @@ $(function() {
             return true;
         }
 
-        private static bool executeQuery(string connString, string query, out long timeMsec, out string[,] header, out IEnumerable<IEnumerable<object>> results, out Exception error)
+        private bool executeQuery(string connString, string query, out long timeMsec, out string[,] header, out IEnumerable<IEnumerable<object>> results, out Exception error)
         {
             // Open a connection and execute the command:
             var conn = new System.Data.SqlClient.SqlConnection(connString);
@@ -1713,6 +1729,18 @@ $(function() {
             try
             {
                 conn.Open();
+
+                // Set the TRANSACTION ISOLATION LEVEL to READ UNCOMMITTED so that we don't block any application queries:
+                var tmpcmd = conn.CreateCommand();
+                tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
+                tmpcmd.ExecuteNonQuery();
+
+                // Set the ROWCOUNT so we don't overload the connection with too many results:
+                if (rowLimit > 0)
+                {
+                    tmpcmd.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
+                    tmpcmd.ExecuteNonQuery();
+                }
 
                 cmd.CommandText = query;
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -1857,6 +1885,22 @@ $(function() {
             }
             message = null;
             return true;
+        }
+
+        const string keytype = "ssh-rsa";
+
+        private static string pubkeyToBase64(RSAParameters key)
+        {
+            // OpenSSL standard of serializing a public key to BASE64
+            int keytypelen = keytype.Length;
+            byte[] raw = new byte[4 + keytypelen + 4 + key.Exponent.Length + 4 + key.Modulus.Length];
+            Array.Copy(itobNetwork((int)keytypelen), 0, raw, 0, 4);
+            Array.Copy(Encoding.ASCII.GetBytes(keytype), 0, raw, 4, keytypelen);
+            Array.Copy(itobNetwork((int)key.Exponent.Length), 0, raw, 4 + keytypelen, 4);
+            Array.Copy(key.Exponent, 0, raw, 4 + keytypelen + 4, key.Exponent.Length);
+            Array.Copy(itobNetwork((int)key.Modulus.Length), 0, raw, 4 + keytypelen + 4 + key.Exponent.Length, 4);
+            Array.Copy(key.Modulus, 0, raw, 4 + keytypelen + 4 + key.Exponent.Length + 4, key.Modulus.Length);
+            return Convert.ToBase64String(raw);
         }
 
         private static RSAParameters pubkeyFromBase64(string base64)
@@ -2268,8 +2312,12 @@ $(function() {
                 tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
                 tmpcmd.ExecuteNonQuery();
 
-                tmpcmd.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
-                tmpcmd.ExecuteNonQuery();
+                // Set the ROWCOUNT so we don't overload the connection with too many results:
+                if (rowLimit > 0)
+                {
+                    tmpcmd.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
+                    tmpcmd.ExecuteNonQuery();
+                }
 
                 // Time the execution and grab the SqlDataReader:
                 System.Diagnostics.Stopwatch swTimer = System.Diagnostics.Stopwatch.StartNew();

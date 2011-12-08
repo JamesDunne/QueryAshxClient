@@ -464,106 +464,120 @@ namespace QueryAshx
         {
             var st = (AsyncUpdateViewState)iar.AsyncState;
 
-            UIMarshal(st.enableQueryPanels);
-
-            // Damn you, HttpWebResponse and your stupid exception handling for non-200 requests.
-            HttpWebResponse rsp;
             try
             {
-                rsp = (HttpWebResponse)st.req.EndGetResponse(iar);
-            }
-            catch (WebException wex)
-            {
-                rsp = (HttpWebResponse)wex.Response;
-            }
+                UIMarshal(st.enableQueryPanels);
 
-            // Read the response as JSON:
-            string json;
-            using (var rspstr = rsp.GetResponseStream())
-            using (var tr = new StreamReader(rspstr, Encoding.UTF8))
-            {
-                json = tr.ReadToEnd();
-                //Debug.WriteLine(json);
-            }
+                // Damn you, HttpWebResponse and your stupid exception handling for non-200 requests.
+                HttpWebResponse rsp;
+                try
+                {
+                    rsp = (HttpWebResponse)st.req.EndGetResponse(iar);
+                }
+                catch (WebException wex)
+                {
+                    if ((wex.Status == WebExceptionStatus.ConnectFailure) || (wex.Response == null))
+                    {
+                        UIMarshal(() => msgbox(wex.Message));
+                        return;
+                    }
+                    rsp = (HttpWebResponse)wex.Response;
+                }
 
-            // Deserialize the JSON:
-            var dict = parseJSON(json);
-            json = null;
+                Debug.Assert(rsp != null);
 
-            Dictionary<string, object> errdict;
-            if (dict.TryGetValueAs("error", o => (Dictionary<string, object>)o, out errdict))
-            {
-                // Handle error responses:
-                st.handleError(errdict);
-                return;
-            }
+                // Read the response as JSON:
+                string json;
+                using (var rspstr = rsp.GetResponseStream())
+                using (var tr = new StreamReader(rspstr, Encoding.UTF8))
+                {
+                    json = tr.ReadToEnd();
+                    //Debug.WriteLine(json);
+                }
 
-            // Should have a successful result now:
+                // Deserialize the JSON:
+                var dict = parseJSON(json);
+                json = null;
+
+                Dictionary<string, object> errdict;
+                if (dict.TryGetValueAs("error", o => (Dictionary<string, object>)o, out errdict))
+                {
+                    // Handle error responses:
+                    UIMarshal(() => st.handleError(errdict));
+                    return;
+                }
+
+                // Should have a successful result now:
 #if false
             foreach (KeyValuePair<string, object> pair in dict)
                 Debug.WriteLine(String.Format("rsp.{0} = {1}", pair.Key, pair.Value));
 #endif
 
-            ArrayList alHeader, alResults;
-            int timeMsec = -1;
-            timeMsec = dict.GetValueOrDefaultAs("time", o => (int)o, -1);
-            alHeader = dict.GetValueOrDefaultAs("header", o => (ArrayList)o);
-            alResults = dict.GetValueOrDefaultAs("results", o => (ArrayList)o);
+                ArrayList alHeader, alResults;
+                int timeMsec = -1;
+                timeMsec = dict.GetValueOrDefaultAs("time", o => (int)o, -1);
+                alHeader = dict.GetValueOrDefaultAs("header", o => (ArrayList)o);
+                alResults = dict.GetValueOrDefaultAs("results", o => (ArrayList)o);
 
-            var header = (
-                from Dictionary<string, object> h in alHeader
-                select new
+                var header = (
+                    from Dictionary<string, object> h in alHeader
+                    select new
+                    {
+                        name = h.GetValueOrDefaultAs("name", o => (string)o),
+                        sqlTypeName = h.GetValueOrDefaultAs("type", o => (string)o),
+                        ordinal = h.GetValueOrDefaultAs("ordinal", o => (int)o)
+                    }
+                ).ToArray();
+
+                // Create a DataTable to represent the results:
+                DataTable dt = new DataTable();
+                var columns = (
+                    from h in header
+                    orderby h.ordinal ascending
+                    select new DataColumn(h.name, getCLRTypeForSQLType(h.sqlTypeName))
+                ).ToArray();
+                dt.Columns.AddRange(columns);
+                // Add row values:
+                foreach (ArrayList row in alResults)
                 {
-                    name = h.GetValueOrDefaultAs("name", o => (string)o),
-                    sqlTypeName = h.GetValueOrDefaultAs("type", o => (string)o),
-                    ordinal = h.GetValueOrDefaultAs("ordinal", o => (int)o)
+                    object[] clrValues = row.OfType<object>().Select((o, i) => convertJSONTypeToCLRType(header[i].sqlTypeName, o)).ToArray();
+                    dt.Rows.Add(clrValues);
                 }
-            ).ToArray();
 
-            // Create a DataTable to represent the results:
-            DataTable dt = new DataTable();
-            var columns = (
-                from h in header
-                orderby h.ordinal ascending
-                select new DataColumn(h.name, getCLRTypeForSQLType(h.sqlTypeName))
-            ).ToArray();
-            dt.Columns.AddRange(columns);
-            // Add row values:
-            foreach (ArrayList row in alResults)
-            {
-                object[] clrValues = row.OfType<object>().Select((o, i) => convertJSONTypeToCLRType(header[i].sqlTypeName, o)).ToArray();
-                dt.Rows.Add(clrValues);
+                // Now set up the UI on the UI thread:
+                UIMarshal(() =>
+                {
+                    st.reportQueryTime(timeMsec);
+
+                    var dg = st.dgResults;
+
+                    // Set up the grid for usability:
+                    doubleBuffered(dg, true);
+                    dg.AlternatingRowsDefaultCellStyle.BackColor = Color.Azure;
+                    dg.AllowUserToAddRows = false;
+                    dg.AllowUserToDeleteRows = false;
+                    dg.AllowUserToOrderColumns = false;
+                    dg.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithAutoHeaderText;
+                    dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+                    dg.AllowUserToResizeColumns = true;
+                    dg.AllowUserToResizeRows = true;
+                    dg.ReadOnly = true;
+                    // Set the grid's data source:
+                    dg.DataSource = dt;
+                    // Disable sorting:
+                    foreach (DataGridViewColumn column in dg.Columns)
+                    {
+                        column.SortMode = DataGridViewColumnSortMode.NotSortable;
+                    }
+
+                    // Success callback:
+                    st.success();
+                });
             }
-
-            // Now set up the UI on the UI thread:
-            UIMarshal(() =>
+            catch (Exception ex)
             {
-                st.reportQueryTime(timeMsec);
-
-                var dg = st.dgResults;
-
-                // Set up the grid for usability:
-                doubleBuffered(dg, true);
-                dg.AlternatingRowsDefaultCellStyle.BackColor = Color.Azure;
-                dg.AllowUserToAddRows = false;
-                dg.AllowUserToDeleteRows = false;
-                dg.AllowUserToOrderColumns = false;
-                dg.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithAutoHeaderText;
-                dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
-                dg.AllowUserToResizeColumns = true;
-                dg.AllowUserToResizeRows = true;
-                dg.ReadOnly = true;
-                // Set the grid's data source:
-                dg.DataSource = dt;
-                // Disable sorting:
-                foreach (DataGridViewColumn column in dg.Columns)
-                {
-                    column.SortMode = DataGridViewColumnSortMode.NotSortable;
-                }
-            });
-
-            // Success callback:
-            st.success();
+                UIMarshal(() => msgbox(ex.Message));
+            }
         }
 
         private UriBuilder getBaseURL()
@@ -596,7 +610,7 @@ namespace QueryAshx
             req.Accept = accept;
             req.ContentType = "application/x-www-form-urlencoded";
 
-            // This opens a connection to the web site:
+            // This opens a connection to the web site to write the POST data:
             using (var reqstr = req.GetRequestStream())
             using (var tw = new StreamWriter(reqstr))
             {
@@ -625,7 +639,7 @@ namespace QueryAshx
 
         private DialogResult msgbox(string message)
         {
-            return MessageBox.Show(this, message, "query.ashx", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return MessageBox.Show(this, message, "query.ashx client", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private bool isCommitEnabled = false;
@@ -752,6 +766,7 @@ namespace QueryAshx
             {
                 { "output", "json3" },  // JSON where each row is an array of column values
                 { "no_query", "1" },    // Don't report the composed query back to us
+                { "rowlimit", ((int)numQueryRowCount.Value).ToString() },
                 { "cs", txtConnectionString.Text.Trim() },
                 { "wi", txtQueryWithIdentifier.Text.Trim() },
                 { "we", txtQueryWithExpression.Text.Trim() },
@@ -887,7 +902,8 @@ namespace QueryAshx
                 { "ts", timestampTicks.ToString() },
                 { "c", cmd },
                 { "q", query },
-                { "cs", txtConnectionString.Text.Trim() }
+                { "cs", txtConnectionString.Text.Trim() },
+                { "rowlimit", ((int)numQueryRowCount.Value).ToString() },
             };
 
             // Construct the query string for the request:
@@ -972,7 +988,6 @@ namespace QueryAshx
         {
             setCommitEnabled(false);
         }
-
     }
 
     internal static class ExtensionMethods

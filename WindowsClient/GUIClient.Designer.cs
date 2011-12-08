@@ -28,12 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle11 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle12 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.txtConnectionString = new System.Windows.Forms.ComboBox();
             this.txtURL = new System.Windows.Forms.ComboBox();
@@ -64,9 +64,10 @@
             this.pnlQueryResults = new System.Windows.Forms.Panel();
             this.dgQueryResults = new QueryAshx.DGVRowNumbers();
             this.panel7 = new System.Windows.Forms.Panel();
+            this.label16 = new System.Windows.Forms.Label();
+            this.numQueryRowCount = new System.Windows.Forms.NumericUpDown();
             this.lblQueryTime = new System.Windows.Forms.Label();
             this.btnQueryExecute = new System.Windows.Forms.Button();
-            this.tbLog = new System.Windows.Forms.TabPage();
             this.tbModify = new System.Windows.Forms.TabPage();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.panel2 = new System.Windows.Forms.Panel();
@@ -86,10 +87,13 @@
             this.pnlModifyResults = new System.Windows.Forms.Panel();
             this.dgModifyResults = new QueryAshx.DGVRowNumbers();
             this.panel8 = new System.Windows.Forms.Panel();
+            this.label17 = new System.Windows.Forms.Label();
+            this.numModifyRowCount = new System.Windows.Forms.NumericUpDown();
             this.btnModifyCommit = new System.Windows.Forms.Button();
             this.lblModifyTime = new System.Windows.Forms.Label();
             this.btnModifyTest = new System.Windows.Forms.Button();
             this.tbKeys = new System.Windows.Forms.TabPage();
+            this.tbLog = new System.Windows.Forms.TabPage();
             this.dlgImportKey = new System.Windows.Forms.OpenFileDialog();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -102,6 +106,7 @@
             this.pnlQueryResults.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).BeginInit();
             this.panel7.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numQueryRowCount)).BeginInit();
             this.tbModify.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -116,6 +121,7 @@
             this.pnlModifyResults.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgModifyResults)).BeginInit();
             this.panel8.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numModifyRowCount)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -180,7 +186,7 @@
             this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox2.Location = new System.Drawing.Point(0, 81);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(982, 614);
+            this.groupBox2.Size = new System.Drawing.Size(982, 574);
             this.groupBox2.TabIndex = 1;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Operation";
@@ -188,14 +194,14 @@
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.tbQuery);
-            this.tabControl1.Controls.Add(this.tbLog);
             this.tabControl1.Controls.Add(this.tbModify);
             this.tabControl1.Controls.Add(this.tbKeys);
+            this.tabControl1.Controls.Add(this.tbLog);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(3, 18);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(976, 593);
+            this.tabControl1.Size = new System.Drawing.Size(976, 553);
             this.tabControl1.TabIndex = 0;
             // 
             // tbQuery
@@ -204,7 +210,7 @@
             this.tbQuery.Location = new System.Drawing.Point(4, 25);
             this.tbQuery.Name = "tbQuery";
             this.tbQuery.Padding = new System.Windows.Forms.Padding(3);
-            this.tbQuery.Size = new System.Drawing.Size(968, 564);
+            this.tbQuery.Size = new System.Drawing.Size(968, 524);
             this.tbQuery.TabIndex = 0;
             this.tbQuery.Text = "Query";
             this.tbQuery.UseVisualStyleBackColor = true;
@@ -222,7 +228,7 @@
             // splitContainer3.Panel2
             // 
             this.splitContainer3.Panel2.Controls.Add(this.pnlQueryResults);
-            this.splitContainer3.Size = new System.Drawing.Size(962, 558);
+            this.splitContainer3.Size = new System.Drawing.Size(962, 518);
             this.splitContainer3.SplitterDistance = 403;
             this.splitContainer3.TabIndex = 2;
             // 
@@ -248,7 +254,7 @@
             this.pnlQuery.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlQuery.Location = new System.Drawing.Point(0, 0);
             this.pnlQuery.Name = "pnlQuery";
-            this.pnlQuery.Size = new System.Drawing.Size(403, 558);
+            this.pnlQuery.Size = new System.Drawing.Size(403, 518);
             this.pnlQuery.TabIndex = 0;
             // 
             // txtQueryOrderBy
@@ -305,7 +311,7 @@
             // 
             this.label13.AutoSize = true;
             this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label13.Location = new System.Drawing.Point(1, 287);
+            this.label13.Location = new System.Drawing.Point(1, 284);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(69, 15);
             this.label13.TabIndex = 11;
@@ -364,7 +370,7 @@
             this.label10.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label10.AutoSize = true;
             this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label10.Location = new System.Drawing.Point(390, 7);
+            this.label10.Location = new System.Drawing.Point(390, 37);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(11, 15);
             this.label10.TabIndex = 6;
@@ -410,18 +416,18 @@
             this.txtQueryWithExpression.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtQueryWithExpression.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtQueryWithExpression.Location = new System.Drawing.Point(206, 4);
+            this.txtQueryWithExpression.Location = new System.Drawing.Point(76, 34);
             this.txtQueryWithExpression.Multiline = true;
             this.txtQueryWithExpression.Name = "txtQueryWithExpression";
             this.txtQueryWithExpression.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtQueryWithExpression.Size = new System.Drawing.Size(178, 82);
+            this.txtQueryWithExpression.Size = new System.Drawing.Size(308, 52);
             this.txtQueryWithExpression.TabIndex = 2;
             // 
             // label7
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(171, 7);
+            this.label7.Location = new System.Drawing.Point(41, 37);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(29, 15);
             this.label7.TabIndex = 1;
@@ -429,10 +435,12 @@
             // 
             // txtQueryWithIdentifier
             // 
+            this.txtQueryWithIdentifier.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.txtQueryWithIdentifier.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryWithIdentifier.Location = new System.Drawing.Point(76, 4);
             this.txtQueryWithIdentifier.Name = "txtQueryWithIdentifier";
-            this.txtQueryWithIdentifier.Size = new System.Drawing.Size(89, 24);
+            this.txtQueryWithIdentifier.Size = new System.Drawing.Size(308, 24);
             this.txtQueryWithIdentifier.TabIndex = 0;
             // 
             // pnlQueryResults
@@ -442,45 +450,47 @@
             this.pnlQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlQueryResults.Location = new System.Drawing.Point(0, 0);
             this.pnlQueryResults.Name = "pnlQueryResults";
-            this.pnlQueryResults.Size = new System.Drawing.Size(555, 558);
+            this.pnlQueryResults.Size = new System.Drawing.Size(555, 518);
             this.pnlQueryResults.TabIndex = 1;
             // 
             // dgQueryResults
             // 
-            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle7.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle7.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle7.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle7.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle7.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle7.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgQueryResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgQueryResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle8.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle8.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle8.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle8.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgQueryResults.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgQueryResults.DefaultCellStyle = dataGridViewCellStyle2;
             this.dgQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgQueryResults.Location = new System.Drawing.Point(0, 23);
             this.dgQueryResults.Name = "dgQueryResults";
-            dataGridViewCellStyle9.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle9.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle9.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle9.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle9.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle9.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle9.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgQueryResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle9;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
             this.dgQueryResults.RowTemplate.Height = 24;
-            this.dgQueryResults.Size = new System.Drawing.Size(555, 535);
+            this.dgQueryResults.Size = new System.Drawing.Size(555, 495);
             this.dgQueryResults.TabIndex = 1;
             // 
             // panel7
             // 
+            this.panel7.Controls.Add(this.label16);
+            this.panel7.Controls.Add(this.numQueryRowCount);
             this.panel7.Controls.Add(this.lblQueryTime);
             this.panel7.Controls.Add(this.btnQueryExecute);
             this.panel7.Dock = System.Windows.Forms.DockStyle.Top;
@@ -488,6 +498,43 @@
             this.panel7.Name = "panel7";
             this.panel7.Size = new System.Drawing.Size(555, 23);
             this.panel7.TabIndex = 0;
+            // 
+            // label16
+            // 
+            this.label16.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label16.AutoSize = true;
+            this.label16.Location = new System.Drawing.Point(303, 3);
+            this.label16.Name = "label16";
+            this.label16.Size = new System.Drawing.Size(91, 17);
+            this.label16.TabIndex = 3;
+            this.label16.Text = "ROWCOUNT";
+            this.label16.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // numQueryRowCount
+            // 
+            this.numQueryRowCount.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numQueryRowCount.Increment = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            this.numQueryRowCount.Location = new System.Drawing.Point(400, 1);
+            this.numQueryRowCount.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.numQueryRowCount.Name = "numQueryRowCount";
+            this.numQueryRowCount.Size = new System.Drawing.Size(71, 22);
+            this.numQueryRowCount.TabIndex = 2;
+            this.numQueryRowCount.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numQueryRowCount.ThousandsSeparator = true;
+            this.numQueryRowCount.UpDownAlign = System.Windows.Forms.LeftRightAlignment.Left;
+            this.numQueryRowCount.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
             // 
             // lblQueryTime
             // 
@@ -509,23 +556,13 @@
             this.btnQueryExecute.UseVisualStyleBackColor = true;
             this.btnQueryExecute.Click += new System.EventHandler(this.btnQueryExecute_Click);
             // 
-            // tbLog
-            // 
-            this.tbLog.Location = new System.Drawing.Point(4, 25);
-            this.tbLog.Name = "tbLog";
-            this.tbLog.Padding = new System.Windows.Forms.Padding(3);
-            this.tbLog.Size = new System.Drawing.Size(968, 564);
-            this.tbLog.TabIndex = 2;
-            this.tbLog.Text = "Log";
-            this.tbLog.UseVisualStyleBackColor = true;
-            // 
             // tbModify
             // 
             this.tbModify.Controls.Add(this.splitContainer1);
             this.tbModify.Location = new System.Drawing.Point(4, 25);
             this.tbModify.Name = "tbModify";
             this.tbModify.Padding = new System.Windows.Forms.Padding(3);
-            this.tbModify.Size = new System.Drawing.Size(968, 564);
+            this.tbModify.Size = new System.Drawing.Size(968, 524);
             this.tbModify.TabIndex = 1;
             this.tbModify.Text = "Modify";
             this.tbModify.UseVisualStyleBackColor = true;
@@ -543,7 +580,7 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.pnlModifyResults);
-            this.splitContainer1.Size = new System.Drawing.Size(962, 558);
+            this.splitContainer1.Size = new System.Drawing.Size(962, 518);
             this.splitContainer1.SplitterDistance = 403;
             this.splitContainer1.TabIndex = 8;
             // 
@@ -554,7 +591,7 @@
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel2.Location = new System.Drawing.Point(0, 0);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(403, 558);
+            this.panel2.Size = new System.Drawing.Size(403, 518);
             this.panel2.TabIndex = 7;
             // 
             // splitContainer2
@@ -571,8 +608,8 @@
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.pnlModifyQuery);
-            this.splitContainer2.Size = new System.Drawing.Size(403, 499);
-            this.splitContainer2.SplitterDistance = 257;
+            this.splitContainer2.Size = new System.Drawing.Size(403, 459);
+            this.splitContainer2.SplitterDistance = 236;
             this.splitContainer2.TabIndex = 6;
             // 
             // pnlModifyCommand
@@ -582,7 +619,7 @@
             this.pnlModifyCommand.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlModifyCommand.Location = new System.Drawing.Point(0, 0);
             this.pnlModifyCommand.Name = "pnlModifyCommand";
-            this.pnlModifyCommand.Size = new System.Drawing.Size(403, 257);
+            this.pnlModifyCommand.Size = new System.Drawing.Size(403, 236);
             this.pnlModifyCommand.TabIndex = 4;
             // 
             // txtModifyCommand
@@ -597,7 +634,7 @@
             this.txtModifyCommand.Multiline = true;
             this.txtModifyCommand.Name = "txtModifyCommand";
             this.txtModifyCommand.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtModifyCommand.Size = new System.Drawing.Size(403, 231);
+            this.txtModifyCommand.Size = new System.Drawing.Size(403, 210);
             this.txtModifyCommand.TabIndex = 1;
             this.txtModifyCommand.TextChanged += new System.EventHandler(this.txtModifyCommand_TextChanged);
             // 
@@ -617,7 +654,7 @@
             this.pnlModifyQuery.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlModifyQuery.Location = new System.Drawing.Point(0, 0);
             this.pnlModifyQuery.Name = "pnlModifyQuery";
-            this.pnlModifyQuery.Size = new System.Drawing.Size(403, 238);
+            this.pnlModifyQuery.Size = new System.Drawing.Size(403, 219);
             this.pnlModifyQuery.TabIndex = 5;
             // 
             // txtModifyQuery
@@ -632,7 +669,7 @@
             this.txtModifyQuery.Multiline = true;
             this.txtModifyQuery.Name = "txtModifyQuery";
             this.txtModifyQuery.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtModifyQuery.Size = new System.Drawing.Size(403, 212);
+            this.txtModifyQuery.Size = new System.Drawing.Size(403, 193);
             this.txtModifyQuery.TabIndex = 2;
             this.txtModifyQuery.TextChanged += new System.EventHandler(this.txtModifyQuery_TextChanged);
             // 
@@ -713,45 +750,47 @@
             this.pnlModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlModifyResults.Location = new System.Drawing.Point(0, 0);
             this.pnlModifyResults.Name = "pnlModifyResults";
-            this.pnlModifyResults.Size = new System.Drawing.Size(555, 558);
+            this.pnlModifyResults.Size = new System.Drawing.Size(555, 518);
             this.pnlModifyResults.TabIndex = 6;
             // 
             // dgModifyResults
             // 
-            dataGridViewCellStyle10.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle10.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle10.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle10.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle10.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle10.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle10.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgModifyResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
             this.dgModifyResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle11.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle11.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle11.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle11.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle11.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle11.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle11.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgModifyResults.DefaultCellStyle = dataGridViewCellStyle11;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle5.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle5.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle5.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgModifyResults.DefaultCellStyle = dataGridViewCellStyle5;
             this.dgModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgModifyResults.Location = new System.Drawing.Point(0, 23);
             this.dgModifyResults.Name = "dgModifyResults";
-            dataGridViewCellStyle12.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle12.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle12.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle12.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle12.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle12.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle12.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgModifyResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle12;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
             this.dgModifyResults.RowTemplate.Height = 24;
-            this.dgModifyResults.Size = new System.Drawing.Size(555, 535);
+            this.dgModifyResults.Size = new System.Drawing.Size(555, 495);
             this.dgModifyResults.TabIndex = 1;
             // 
             // panel8
             // 
+            this.panel8.Controls.Add(this.label17);
+            this.panel8.Controls.Add(this.numModifyRowCount);
             this.panel8.Controls.Add(this.btnModifyCommit);
             this.panel8.Controls.Add(this.lblModifyTime);
             this.panel8.Controls.Add(this.btnModifyTest);
@@ -760,6 +799,43 @@
             this.panel8.Name = "panel8";
             this.panel8.Size = new System.Drawing.Size(555, 23);
             this.panel8.TabIndex = 0;
+            // 
+            // label17
+            // 
+            this.label17.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label17.AutoSize = true;
+            this.label17.Location = new System.Drawing.Point(222, 3);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(91, 17);
+            this.label17.TabIndex = 5;
+            this.label17.Text = "ROWCOUNT";
+            this.label17.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // numModifyRowCount
+            // 
+            this.numModifyRowCount.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numModifyRowCount.Increment = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            this.numModifyRowCount.Location = new System.Drawing.Point(319, 1);
+            this.numModifyRowCount.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.numModifyRowCount.Name = "numModifyRowCount";
+            this.numModifyRowCount.Size = new System.Drawing.Size(71, 22);
+            this.numModifyRowCount.TabIndex = 4;
+            this.numModifyRowCount.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numModifyRowCount.ThousandsSeparator = true;
+            this.numModifyRowCount.UpDownAlign = System.Windows.Forms.LeftRightAlignment.Left;
+            this.numModifyRowCount.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
             // 
             // btnModifyCommit
             // 
@@ -800,10 +876,20 @@
             this.tbKeys.Location = new System.Drawing.Point(4, 25);
             this.tbKeys.Name = "tbKeys";
             this.tbKeys.Padding = new System.Windows.Forms.Padding(3);
-            this.tbKeys.Size = new System.Drawing.Size(968, 564);
+            this.tbKeys.Size = new System.Drawing.Size(968, 524);
             this.tbKeys.TabIndex = 3;
-            this.tbKeys.Text = "Key Management";
+            this.tbKeys.Text = "Keys";
             this.tbKeys.UseVisualStyleBackColor = true;
+            // 
+            // tbLog
+            // 
+            this.tbLog.Location = new System.Drawing.Point(4, 25);
+            this.tbLog.Name = "tbLog";
+            this.tbLog.Padding = new System.Windows.Forms.Padding(3);
+            this.tbLog.Size = new System.Drawing.Size(968, 524);
+            this.tbLog.TabIndex = 2;
+            this.tbLog.Text = "Log";
+            this.tbLog.UseVisualStyleBackColor = true;
             // 
             // dlgImportKey
             // 
@@ -814,7 +900,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(982, 695);
+            this.ClientSize = new System.Drawing.Size(982, 655);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Name = "GUIClient";
@@ -834,6 +920,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).EndInit();
             this.panel7.ResumeLayout(false);
             this.panel7.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numQueryRowCount)).EndInit();
             this.tbModify.ResumeLayout(false);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
@@ -852,6 +939,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.dgModifyResults)).EndInit();
             this.panel8.ResumeLayout(false);
             this.panel8.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numModifyRowCount)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -915,5 +1003,9 @@
         private System.Windows.Forms.Button btnModifyCommit;
         private DGVRowNumbers dgQueryResults;
         private DGVRowNumbers dgModifyResults;
+        private System.Windows.Forms.Label label16;
+        private System.Windows.Forms.NumericUpDown numQueryRowCount;
+        private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.NumericUpDown numModifyRowCount;
     }
 }
