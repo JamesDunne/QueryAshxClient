@@ -810,6 +810,9 @@ namespace QueryAshx
                 where strim.Length > 0
                 select strim).ToArray());
             if (connectionStrings.Count > 0) txtConnectionString.SelectedIndex = 0;
+
+            // Load the private key file path:
+            txtModifyPrivateKeyPath.Text = dict.GetValueOrDefaultAs("ppk", o => (string)o, String.Empty);
         }
 
         #endregion
@@ -832,13 +835,16 @@ namespace QueryAshx
                     where s != null
                     let strim = s.Trim()
                     where strim.Length > 0
-                    select strim).ToArray() },
+                    select strim).ToArray()
+                },
                 { "cs", (
                     from s in txtConnectionString.Items.OfType<string>()
                     where s != null
                     let strim = s.Trim()
                     where strim.Length > 0
-                    select strim).ToArray() }
+                    select strim).ToArray()
+                },
+                { "ppk", txtModifyPrivateKeyPath.Text.Trim() }
             };
             if (!Directory.Exists(myAppData)) Directory.CreateDirectory(myAppData);
             serializeJSONFile(recentSettingsPath, dict);
