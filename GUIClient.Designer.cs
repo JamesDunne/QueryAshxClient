@@ -28,24 +28,20 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle17 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle18 = new System.Windows.Forms.DataGridViewCellStyle();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.txtConnectionString = new System.Windows.Forms.TextBox();
+            this.txtURL = new System.Windows.Forms.ComboBox();
             this.label6 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tbQuery = new System.Windows.Forms.TabPage();
-            this.pnlQueryResults = new System.Windows.Forms.Panel();
-            this.dgQueryResults = new System.Windows.Forms.DataGridView();
-            this.panel7 = new System.Windows.Forms.Panel();
-            this.lblQueryTime = new System.Windows.Forms.Label();
-            this.btnQueryExecute = new System.Windows.Forms.Button();
+            this.splitContainer3 = new System.Windows.Forms.SplitContainer();
             this.pnlQuery = new System.Windows.Forms.Panel();
             this.txtQueryOrderBy = new System.Windows.Forms.TextBox();
             this.label15 = new System.Windows.Forms.Label();
@@ -64,63 +60,67 @@
             this.txtQueryWithExpression = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.txtQueryWithIdentifier = new System.Windows.Forms.TextBox();
+            this.pnlQueryResults = new System.Windows.Forms.Panel();
+            this.dgQueryResults = new System.Windows.Forms.DataGridView();
+            this.panel7 = new System.Windows.Forms.Panel();
+            this.lblQueryTime = new System.Windows.Forms.Label();
+            this.btnQueryExecute = new System.Windows.Forms.Button();
             this.tbLog = new System.Windows.Forms.TabPage();
             this.tbModify = new System.Windows.Forms.TabPage();
-            this.pnlModifyResults = new System.Windows.Forms.Panel();
-            this.dgModifyResults = new System.Windows.Forms.DataGridView();
-            this.panel8 = new System.Windows.Forms.Panel();
-            this.lblModifyTime = new System.Windows.Forms.Label();
-            this.btnModifyCommit = new System.Windows.Forms.Button();
-            this.pnlModifyQuery = new System.Windows.Forms.Panel();
-            this.txtModifyQuery = new System.Windows.Forms.TextBox();
-            this.label5 = new System.Windows.Forms.Label();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.pnlModifyCommand = new System.Windows.Forms.Panel();
             this.txtModifyCommand = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.pnlModifyQuery = new System.Windows.Forms.Panel();
+            this.txtModifyQuery = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
             this.txtModifyPassphrase = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.btnModifyBrowsePrivateKeyPath = new System.Windows.Forms.Button();
             this.txtModifyPrivateKeyPath = new System.Windows.Forms.TextBox();
+            this.pnlModifyResults = new System.Windows.Forms.Panel();
+            this.dgModifyResults = new System.Windows.Forms.DataGridView();
+            this.panel8 = new System.Windows.Forms.Panel();
+            this.lblModifyTime = new System.Windows.Forms.Label();
+            this.btnModifyCommit = new System.Windows.Forms.Button();
             this.tbKeys = new System.Windows.Forms.TabPage();
             this.dlgImportKey = new System.Windows.Forms.OpenFileDialog();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.splitContainer3 = new System.Windows.Forms.SplitContainer();
-            this.txtURL = new System.Windows.Forms.ComboBox();
+            this.txtConnectionString = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tbQuery.SuspendLayout();
-            this.pnlQueryResults.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).BeginInit();
-            this.panel7.SuspendLayout();
-            this.pnlQuery.SuspendLayout();
-            this.tbModify.SuspendLayout();
-            this.pnlModifyResults.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgModifyResults)).BeginInit();
-            this.panel8.SuspendLayout();
-            this.pnlModifyQuery.SuspendLayout();
-            this.pnlModifyCommand.SuspendLayout();
-            this.panel1.SuspendLayout();
-            this.panel2.SuspendLayout();
-            this.splitContainer1.Panel1.SuspendLayout();
-            this.splitContainer1.Panel2.SuspendLayout();
-            this.splitContainer1.SuspendLayout();
-            this.splitContainer2.Panel1.SuspendLayout();
-            this.splitContainer2.Panel2.SuspendLayout();
-            this.splitContainer2.SuspendLayout();
             this.splitContainer3.Panel1.SuspendLayout();
             this.splitContainer3.Panel2.SuspendLayout();
             this.splitContainer3.SuspendLayout();
+            this.pnlQuery.SuspendLayout();
+            this.pnlQueryResults.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).BeginInit();
+            this.panel7.SuspendLayout();
+            this.tbModify.SuspendLayout();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.splitContainer2.Panel1.SuspendLayout();
+            this.splitContainer2.Panel2.SuspendLayout();
+            this.splitContainer2.SuspendLayout();
+            this.pnlModifyCommand.SuspendLayout();
+            this.pnlModifyQuery.SuspendLayout();
+            this.panel1.SuspendLayout();
+            this.pnlModifyResults.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgModifyResults)).BeginInit();
+            this.panel8.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.txtURL);
             this.groupBox1.Controls.Add(this.txtConnectionString);
+            this.groupBox1.Controls.Add(this.txtURL);
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
@@ -131,19 +131,22 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Server";
             // 
-            // txtConnectionString
+            // txtURL
             // 
-            this.txtConnectionString.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.txtURL.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtConnectionString.Location = new System.Drawing.Point(148, 43);
-            this.txtConnectionString.Name = "txtConnectionString";
-            this.txtConnectionString.Size = new System.Drawing.Size(821, 22);
-            this.txtConnectionString.TabIndex = 3;
+            this.txtURL.FormattingEnabled = true;
+            this.txtURL.Location = new System.Drawing.Point(148, 15);
+            this.txtURL.Name = "txtURL";
+            this.txtURL.Size = new System.Drawing.Size(821, 24);
+            this.txtURL.TabIndex = 4;
+            this.txtURL.Text = "http://localhost:11936/query.ashx";
+            this.txtURL.Leave += new System.EventHandler(this.txtURL_Leave);
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(6, 46);
+            this.label6.Location = new System.Drawing.Point(6, 48);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(120, 17);
             this.label6.TabIndex = 2;
@@ -193,79 +196,22 @@
             this.tbQuery.Text = "Query";
             this.tbQuery.UseVisualStyleBackColor = true;
             // 
-            // pnlQueryResults
+            // splitContainer3
             // 
-            this.pnlQueryResults.Controls.Add(this.dgQueryResults);
-            this.pnlQueryResults.Controls.Add(this.panel7);
-            this.pnlQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlQueryResults.Location = new System.Drawing.Point(0, 0);
-            this.pnlQueryResults.Name = "pnlQueryResults";
-            this.pnlQueryResults.Size = new System.Drawing.Size(555, 458);
-            this.pnlQueryResults.TabIndex = 1;
+            this.splitContainer3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer3.Location = new System.Drawing.Point(3, 3);
+            this.splitContainer3.Name = "splitContainer3";
             // 
-            // dgQueryResults
+            // splitContainer3.Panel1
             // 
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgQueryResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            this.dgQueryResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgQueryResults.DefaultCellStyle = dataGridViewCellStyle2;
-            this.dgQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgQueryResults.Location = new System.Drawing.Point(0, 23);
-            this.dgQueryResults.Name = "dgQueryResults";
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgQueryResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
-            this.dgQueryResults.RowTemplate.Height = 24;
-            this.dgQueryResults.Size = new System.Drawing.Size(555, 435);
-            this.dgQueryResults.TabIndex = 1;
+            this.splitContainer3.Panel1.Controls.Add(this.pnlQuery);
             // 
-            // panel7
+            // splitContainer3.Panel2
             // 
-            this.panel7.Controls.Add(this.lblQueryTime);
-            this.panel7.Controls.Add(this.btnQueryExecute);
-            this.panel7.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel7.Location = new System.Drawing.Point(0, 0);
-            this.panel7.Name = "panel7";
-            this.panel7.Size = new System.Drawing.Size(555, 23);
-            this.panel7.TabIndex = 0;
-            // 
-            // lblQueryTime
-            // 
-            this.lblQueryTime.AutoSize = true;
-            this.lblQueryTime.Location = new System.Drawing.Point(2, 3);
-            this.lblQueryTime.Name = "lblQueryTime";
-            this.lblQueryTime.Size = new System.Drawing.Size(60, 17);
-            this.lblQueryTime.TabIndex = 1;
-            this.lblQueryTime.Text = "             ";
-            // 
-            // btnQueryExecute
-            // 
-            this.btnQueryExecute.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnQueryExecute.Location = new System.Drawing.Point(477, 0);
-            this.btnQueryExecute.Name = "btnQueryExecute";
-            this.btnQueryExecute.Size = new System.Drawing.Size(75, 23);
-            this.btnQueryExecute.TabIndex = 0;
-            this.btnQueryExecute.Text = "Execute";
-            this.btnQueryExecute.UseVisualStyleBackColor = true;
-            this.btnQueryExecute.Click += new System.EventHandler(this.btnQueryExecute_Click);
+            this.splitContainer3.Panel2.Controls.Add(this.pnlQueryResults);
+            this.splitContainer3.Size = new System.Drawing.Size(962, 458);
+            this.splitContainer3.SplitterDistance = 403;
+            this.splitContainer3.TabIndex = 2;
             // 
             // pnlQuery
             // 
@@ -467,6 +413,80 @@
             this.txtQueryWithIdentifier.Size = new System.Drawing.Size(78, 28);
             this.txtQueryWithIdentifier.TabIndex = 0;
             // 
+            // pnlQueryResults
+            // 
+            this.pnlQueryResults.Controls.Add(this.dgQueryResults);
+            this.pnlQueryResults.Controls.Add(this.panel7);
+            this.pnlQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlQueryResults.Location = new System.Drawing.Point(0, 0);
+            this.pnlQueryResults.Name = "pnlQueryResults";
+            this.pnlQueryResults.Size = new System.Drawing.Size(555, 458);
+            this.pnlQueryResults.TabIndex = 1;
+            // 
+            // dgQueryResults
+            // 
+            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle13.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle13.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle13.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle13.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle13.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle13.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle13;
+            this.dgQueryResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle14.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle14.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle14.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle14.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle14.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle14.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgQueryResults.DefaultCellStyle = dataGridViewCellStyle14;
+            this.dgQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgQueryResults.Location = new System.Drawing.Point(0, 23);
+            this.dgQueryResults.Name = "dgQueryResults";
+            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle15.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle15.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle15.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle15.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle15.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle15.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle15;
+            this.dgQueryResults.RowTemplate.Height = 24;
+            this.dgQueryResults.Size = new System.Drawing.Size(555, 435);
+            this.dgQueryResults.TabIndex = 1;
+            // 
+            // panel7
+            // 
+            this.panel7.Controls.Add(this.lblQueryTime);
+            this.panel7.Controls.Add(this.btnQueryExecute);
+            this.panel7.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel7.Location = new System.Drawing.Point(0, 0);
+            this.panel7.Name = "panel7";
+            this.panel7.Size = new System.Drawing.Size(555, 23);
+            this.panel7.TabIndex = 0;
+            // 
+            // lblQueryTime
+            // 
+            this.lblQueryTime.AutoSize = true;
+            this.lblQueryTime.Location = new System.Drawing.Point(2, 3);
+            this.lblQueryTime.Name = "lblQueryTime";
+            this.lblQueryTime.Size = new System.Drawing.Size(60, 17);
+            this.lblQueryTime.TabIndex = 1;
+            this.lblQueryTime.Text = "             ";
+            // 
+            // btnQueryExecute
+            // 
+            this.btnQueryExecute.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnQueryExecute.Location = new System.Drawing.Point(477, 0);
+            this.btnQueryExecute.Name = "btnQueryExecute";
+            this.btnQueryExecute.Size = new System.Drawing.Size(75, 23);
+            this.btnQueryExecute.TabIndex = 0;
+            this.btnQueryExecute.Text = "Execute";
+            this.btnQueryExecute.UseVisualStyleBackColor = true;
+            this.btnQueryExecute.Click += new System.EventHandler(this.btnQueryExecute_Click);
+            // 
             // tbLog
             // 
             this.tbLog.Location = new System.Drawing.Point(4, 25);
@@ -488,114 +508,50 @@
             this.tbModify.Text = "Modify";
             this.tbModify.UseVisualStyleBackColor = true;
             // 
-            // pnlModifyResults
+            // splitContainer1
             // 
-            this.pnlModifyResults.Controls.Add(this.dgModifyResults);
-            this.pnlModifyResults.Controls.Add(this.panel8);
-            this.pnlModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlModifyResults.Location = new System.Drawing.Point(0, 0);
-            this.pnlModifyResults.Name = "pnlModifyResults";
-            this.pnlModifyResults.Size = new System.Drawing.Size(555, 458);
-            this.pnlModifyResults.TabIndex = 6;
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Location = new System.Drawing.Point(3, 3);
+            this.splitContainer1.Name = "splitContainer1";
             // 
-            // dgModifyResults
+            // splitContainer1.Panel1
             // 
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgModifyResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
-            this.dgModifyResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle5.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle5.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgModifyResults.DefaultCellStyle = dataGridViewCellStyle5;
-            this.dgModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgModifyResults.Location = new System.Drawing.Point(0, 23);
-            this.dgModifyResults.Name = "dgModifyResults";
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgModifyResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
-            this.dgModifyResults.RowTemplate.Height = 24;
-            this.dgModifyResults.Size = new System.Drawing.Size(555, 435);
-            this.dgModifyResults.TabIndex = 1;
+            this.splitContainer1.Panel1.Controls.Add(this.panel2);
             // 
-            // panel8
+            // splitContainer1.Panel2
             // 
-            this.panel8.Controls.Add(this.lblModifyTime);
-            this.panel8.Controls.Add(this.btnModifyCommit);
-            this.panel8.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel8.Location = new System.Drawing.Point(0, 0);
-            this.panel8.Name = "panel8";
-            this.panel8.Size = new System.Drawing.Size(555, 23);
-            this.panel8.TabIndex = 0;
+            this.splitContainer1.Panel2.Controls.Add(this.pnlModifyResults);
+            this.splitContainer1.Size = new System.Drawing.Size(962, 458);
+            this.splitContainer1.SplitterDistance = 403;
+            this.splitContainer1.TabIndex = 8;
             // 
-            // lblModifyTime
+            // panel2
             // 
-            this.lblModifyTime.AutoSize = true;
-            this.lblModifyTime.Location = new System.Drawing.Point(2, 3);
-            this.lblModifyTime.Name = "lblModifyTime";
-            this.lblModifyTime.Size = new System.Drawing.Size(60, 17);
-            this.lblModifyTime.TabIndex = 2;
-            this.lblModifyTime.Text = "             ";
+            this.panel2.Controls.Add(this.splitContainer2);
+            this.panel2.Controls.Add(this.panel1);
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel2.Location = new System.Drawing.Point(0, 0);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(403, 458);
+            this.panel2.TabIndex = 7;
             // 
-            // btnModifyCommit
+            // splitContainer2
             // 
-            this.btnModifyCommit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnModifyCommit.Location = new System.Drawing.Point(477, 0);
-            this.btnModifyCommit.Name = "btnModifyCommit";
-            this.btnModifyCommit.Size = new System.Drawing.Size(75, 23);
-            this.btnModifyCommit.TabIndex = 0;
-            this.btnModifyCommit.Tag = "";
-            this.btnModifyCommit.Text = "Test";
-            this.btnModifyCommit.UseVisualStyleBackColor = true;
-            this.btnModifyCommit.Click += new System.EventHandler(this.btnModifyCommit_Click);
+            this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer2.Location = new System.Drawing.Point(0, 59);
+            this.splitContainer2.Name = "splitContainer2";
+            this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
-            // pnlModifyQuery
+            // splitContainer2.Panel1
             // 
-            this.pnlModifyQuery.Controls.Add(this.txtModifyQuery);
-            this.pnlModifyQuery.Controls.Add(this.label5);
-            this.pnlModifyQuery.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlModifyQuery.Location = new System.Drawing.Point(0, 0);
-            this.pnlModifyQuery.Name = "pnlModifyQuery";
-            this.pnlModifyQuery.Size = new System.Drawing.Size(403, 133);
-            this.pnlModifyQuery.TabIndex = 5;
+            this.splitContainer2.Panel1.Controls.Add(this.pnlModifyCommand);
             // 
-            // txtModifyQuery
+            // splitContainer2.Panel2
             // 
-            this.txtModifyQuery.AcceptsReturn = true;
-            this.txtModifyQuery.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtModifyQuery.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtModifyQuery.HideSelection = false;
-            this.txtModifyQuery.Location = new System.Drawing.Point(0, 23);
-            this.txtModifyQuery.Multiline = true;
-            this.txtModifyQuery.Name = "txtModifyQuery";
-            this.txtModifyQuery.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtModifyQuery.Size = new System.Drawing.Size(403, 107);
-            this.txtModifyQuery.TabIndex = 2;
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(0, 3);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(152, 17);
-            this.label5.TabIndex = 1;
-            this.label5.Text = "SQL verification query:";
+            this.splitContainer2.Panel2.Controls.Add(this.pnlModifyQuery);
+            this.splitContainer2.Size = new System.Drawing.Size(403, 399);
+            this.splitContainer2.SplitterDistance = 262;
+            this.splitContainer2.TabIndex = 6;
             // 
             // pnlModifyCommand
             // 
@@ -630,6 +586,40 @@
             this.label4.Size = new System.Drawing.Size(185, 17);
             this.label4.TabIndex = 0;
             this.label4.Text = "SQL data update command:";
+            // 
+            // pnlModifyQuery
+            // 
+            this.pnlModifyQuery.Controls.Add(this.txtModifyQuery);
+            this.pnlModifyQuery.Controls.Add(this.label5);
+            this.pnlModifyQuery.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlModifyQuery.Location = new System.Drawing.Point(0, 0);
+            this.pnlModifyQuery.Name = "pnlModifyQuery";
+            this.pnlModifyQuery.Size = new System.Drawing.Size(403, 133);
+            this.pnlModifyQuery.TabIndex = 5;
+            // 
+            // txtModifyQuery
+            // 
+            this.txtModifyQuery.AcceptsReturn = true;
+            this.txtModifyQuery.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtModifyQuery.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtModifyQuery.HideSelection = false;
+            this.txtModifyQuery.Location = new System.Drawing.Point(0, 23);
+            this.txtModifyQuery.Multiline = true;
+            this.txtModifyQuery.Name = "txtModifyQuery";
+            this.txtModifyQuery.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtModifyQuery.Size = new System.Drawing.Size(403, 107);
+            this.txtModifyQuery.TabIndex = 2;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(0, 3);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(152, 17);
+            this.label5.TabIndex = 1;
+            this.label5.Text = "SQL verification query:";
             // 
             // panel1
             // 
@@ -692,6 +682,81 @@
             this.txtModifyPrivateKeyPath.Size = new System.Drawing.Size(251, 22);
             this.txtModifyPrivateKeyPath.TabIndex = 1;
             // 
+            // pnlModifyResults
+            // 
+            this.pnlModifyResults.Controls.Add(this.dgModifyResults);
+            this.pnlModifyResults.Controls.Add(this.panel8);
+            this.pnlModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlModifyResults.Location = new System.Drawing.Point(0, 0);
+            this.pnlModifyResults.Name = "pnlModifyResults";
+            this.pnlModifyResults.Size = new System.Drawing.Size(555, 458);
+            this.pnlModifyResults.TabIndex = 6;
+            // 
+            // dgModifyResults
+            // 
+            dataGridViewCellStyle16.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle16.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle16.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle16.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle16.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle16.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle16.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle16;
+            this.dgModifyResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewCellStyle17.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle17.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle17.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle17.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle17.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle17.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle17.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgModifyResults.DefaultCellStyle = dataGridViewCellStyle17;
+            this.dgModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgModifyResults.Location = new System.Drawing.Point(0, 23);
+            this.dgModifyResults.Name = "dgModifyResults";
+            dataGridViewCellStyle18.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle18.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle18.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle18.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle18.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle18.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle18.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle18;
+            this.dgModifyResults.RowTemplate.Height = 24;
+            this.dgModifyResults.Size = new System.Drawing.Size(555, 435);
+            this.dgModifyResults.TabIndex = 1;
+            // 
+            // panel8
+            // 
+            this.panel8.Controls.Add(this.lblModifyTime);
+            this.panel8.Controls.Add(this.btnModifyCommit);
+            this.panel8.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel8.Location = new System.Drawing.Point(0, 0);
+            this.panel8.Name = "panel8";
+            this.panel8.Size = new System.Drawing.Size(555, 23);
+            this.panel8.TabIndex = 0;
+            // 
+            // lblModifyTime
+            // 
+            this.lblModifyTime.AutoSize = true;
+            this.lblModifyTime.Location = new System.Drawing.Point(2, 3);
+            this.lblModifyTime.Name = "lblModifyTime";
+            this.lblModifyTime.Size = new System.Drawing.Size(60, 17);
+            this.lblModifyTime.TabIndex = 2;
+            this.lblModifyTime.Text = "             ";
+            // 
+            // btnModifyCommit
+            // 
+            this.btnModifyCommit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnModifyCommit.Location = new System.Drawing.Point(477, 0);
+            this.btnModifyCommit.Name = "btnModifyCommit";
+            this.btnModifyCommit.Size = new System.Drawing.Size(75, 23);
+            this.btnModifyCommit.TabIndex = 0;
+            this.btnModifyCommit.Tag = "";
+            this.btnModifyCommit.Text = "Test";
+            this.btnModifyCommit.UseVisualStyleBackColor = true;
+            this.btnModifyCommit.Click += new System.EventHandler(this.btnModifyCommit_Click);
+            // 
             // tbKeys
             // 
             this.tbKeys.Location = new System.Drawing.Point(4, 25);
@@ -707,76 +772,16 @@
             this.dlgImportKey.FileName = "id_rsa";
             this.dlgImportKey.Title = "Import OpenSSL RSA private key";
             // 
-            // panel2
+            // txtConnectionString
             // 
-            this.panel2.Controls.Add(this.splitContainer2);
-            this.panel2.Controls.Add(this.panel1);
-            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel2.Location = new System.Drawing.Point(0, 0);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(403, 458);
-            this.panel2.TabIndex = 7;
-            // 
-            // splitContainer1
-            // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(3, 3);
-            this.splitContainer1.Name = "splitContainer1";
-            // 
-            // splitContainer1.Panel1
-            // 
-            this.splitContainer1.Panel1.Controls.Add(this.panel2);
-            // 
-            // splitContainer1.Panel2
-            // 
-            this.splitContainer1.Panel2.Controls.Add(this.pnlModifyResults);
-            this.splitContainer1.Size = new System.Drawing.Size(962, 458);
-            this.splitContainer1.SplitterDistance = 403;
-            this.splitContainer1.TabIndex = 8;
-            // 
-            // splitContainer2
-            // 
-            this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer2.Location = new System.Drawing.Point(0, 59);
-            this.splitContainer2.Name = "splitContainer2";
-            this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // splitContainer2.Panel1
-            // 
-            this.splitContainer2.Panel1.Controls.Add(this.pnlModifyCommand);
-            // 
-            // splitContainer2.Panel2
-            // 
-            this.splitContainer2.Panel2.Controls.Add(this.pnlModifyQuery);
-            this.splitContainer2.Size = new System.Drawing.Size(403, 399);
-            this.splitContainer2.SplitterDistance = 262;
-            this.splitContainer2.TabIndex = 6;
-            // 
-            // splitContainer3
-            // 
-            this.splitContainer3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer3.Location = new System.Drawing.Point(3, 3);
-            this.splitContainer3.Name = "splitContainer3";
-            // 
-            // splitContainer3.Panel1
-            // 
-            this.splitContainer3.Panel1.Controls.Add(this.pnlQuery);
-            // 
-            // splitContainer3.Panel2
-            // 
-            this.splitContainer3.Panel2.Controls.Add(this.pnlQueryResults);
-            this.splitContainer3.Size = new System.Drawing.Size(962, 458);
-            this.splitContainer3.SplitterDistance = 403;
-            this.splitContainer3.TabIndex = 2;
-            // 
-            // txtURL
-            // 
-            this.txtURL.FormattingEnabled = true;
-            this.txtURL.Location = new System.Drawing.Point(148, 15);
-            this.txtURL.Name = "txtURL";
-            this.txtURL.Size = new System.Drawing.Size(821, 24);
-            this.txtURL.TabIndex = 4;
-            this.txtURL.Text = "http://localhost:11936/query.ashx";
+            this.txtConnectionString.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtConnectionString.FormattingEnabled = true;
+            this.txtConnectionString.Location = new System.Drawing.Point(148, 45);
+            this.txtConnectionString.Name = "txtConnectionString";
+            this.txtConnectionString.Size = new System.Drawing.Size(821, 24);
+            this.txtConnectionString.TabIndex = 5;
+            this.txtConnectionString.Leave += new System.EventHandler(this.txtConnectionString_Leave);
             // 
             // GUIClient
             // 
@@ -793,33 +798,33 @@
             this.groupBox2.ResumeLayout(false);
             this.tabControl1.ResumeLayout(false);
             this.tbQuery.ResumeLayout(false);
+            this.splitContainer3.Panel1.ResumeLayout(false);
+            this.splitContainer3.Panel2.ResumeLayout(false);
+            this.splitContainer3.ResumeLayout(false);
+            this.pnlQuery.ResumeLayout(false);
+            this.pnlQuery.PerformLayout();
             this.pnlQueryResults.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgQueryResults)).EndInit();
             this.panel7.ResumeLayout(false);
             this.panel7.PerformLayout();
-            this.pnlQuery.ResumeLayout(false);
-            this.pnlQuery.PerformLayout();
             this.tbModify.ResumeLayout(false);
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            this.splitContainer1.ResumeLayout(false);
+            this.panel2.ResumeLayout(false);
+            this.splitContainer2.Panel1.ResumeLayout(false);
+            this.splitContainer2.Panel2.ResumeLayout(false);
+            this.splitContainer2.ResumeLayout(false);
+            this.pnlModifyCommand.ResumeLayout(false);
+            this.pnlModifyCommand.PerformLayout();
+            this.pnlModifyQuery.ResumeLayout(false);
+            this.pnlModifyQuery.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.pnlModifyResults.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgModifyResults)).EndInit();
             this.panel8.ResumeLayout(false);
             this.panel8.PerformLayout();
-            this.pnlModifyQuery.ResumeLayout(false);
-            this.pnlModifyQuery.PerformLayout();
-            this.pnlModifyCommand.ResumeLayout(false);
-            this.pnlModifyCommand.PerformLayout();
-            this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
-            this.panel2.ResumeLayout(false);
-            this.splitContainer1.Panel1.ResumeLayout(false);
-            this.splitContainer1.Panel2.ResumeLayout(false);
-            this.splitContainer1.ResumeLayout(false);
-            this.splitContainer2.Panel1.ResumeLayout(false);
-            this.splitContainer2.Panel2.ResumeLayout(false);
-            this.splitContainer2.ResumeLayout(false);
-            this.splitContainer3.Panel1.ResumeLayout(false);
-            this.splitContainer3.Panel2.ResumeLayout(false);
-            this.splitContainer3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -846,7 +851,6 @@
         private System.Windows.Forms.Panel pnlModifyQuery;
         private System.Windows.Forms.TextBox txtModifyQuery;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.TextBox txtConnectionString;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TabPage tbKeys;
         private System.Windows.Forms.Panel pnlQueryResults;
@@ -882,5 +886,6 @@
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.SplitContainer splitContainer3;
         private System.Windows.Forms.ComboBox txtURL;
+        private System.Windows.Forms.ComboBox txtConnectionString;
     }
 }

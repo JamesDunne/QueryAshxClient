@@ -386,6 +386,37 @@ namespace QueryAshx
                 uiAction();
         }
 
+        private static Dictionary<string, object> parseJSON(string json)
+        {
+            // Deserialize the JSON:
+            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+            jss.RecursionLimit = 8;
+            jss.MaxJsonLength = int.MaxValue;
+            var dict = jss.Deserialize<Dictionary<string, object>>(json);
+            return dict;
+        }
+
+        private static string serializeJSON(Dictionary<string, object> values)
+        {
+            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+            jss.RecursionLimit = 8;
+            jss.MaxJsonLength = int.MaxValue;
+            string json = jss.Serialize(values);
+            return json;
+        }
+
+        private static Dictionary<string, object> parseJSONFile(string jsonPath)
+        {
+            if (!File.Exists(jsonPath)) return new Dictionary<string, object>();
+            return parseJSON(File.ReadAllText(jsonPath));
+        }
+
+        private static void serializeJSONFile(string jsonPath, Dictionary<string, object> values)
+        {
+            string json = serializeJSON(values);
+            File.WriteAllText(jsonPath, json, Encoding.UTF8);
+        }
+
         private static Type getCLRTypeForSQLType(string sqlTypeName)
         {
             // TODO: complete me!
@@ -435,10 +466,7 @@ namespace QueryAshx
             }
 
             // Deserialize the JSON:
-            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
-            jss.RecursionLimit = 6;
-            jss.MaxJsonLength = int.MaxValue;
-            var dict = jss.Deserialize<Dictionary<string, object>>(json);
+            var dict = parseJSON(json);
             json = null;
 
             Dictionary<string, object> errdict;
@@ -743,17 +771,86 @@ namespace QueryAshx
             req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
         }
 
+        private readonly string recentSettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "recent.json");
+
         private void GUIClient_Load(object sender, EventArgs e)
         {
+            var dict = parseJSONFile(recentSettingsPath);
+
+            // Load recent URLs:
+            var urls = dict.GetValueOrDefaultAs("urls", o => (ArrayList)o, () => new ArrayList(0));
             txtURL.Items.Clear();
-            txtURL.Items.AddRange(new string[] { "boo!" });
+            txtURL.Items.AddRange((
+                from s in urls.OfType<string>()
+                where s != null
+                let strim = s.Trim()
+                where strim.Length > 0
+                select strim).ToArray());
+            if (urls.Count > 0) txtURL.SelectedIndex = 0;
+
+            // Load recent connection strings:
+            var connectionStrings = dict.GetValueOrDefaultAs("cs", o => (ArrayList)o, () => new ArrayList(0));
+            txtConnectionString.Items.Clear();
+            txtConnectionString.Items.AddRange((
+                from s in connectionStrings.OfType<string>()
+                where s != null
+                let strim = s.Trim()
+                where strim.Length > 0
+                select strim).ToArray());
+            if (connectionStrings.Count > 0) txtConnectionString.SelectedIndex = 0;
         }
 
         #endregion
+
+        private void persistSettings()
+        {
+            var dict = new Dictionary<string, object> {
+                { "urls", (
+                    from s in txtURL.Items.OfType<string>()
+                    where s != null
+                    let strim = s.Trim()
+                    where strim.Length > 0
+                    select strim).ToArray() },
+                { "cs", (
+                    from s in txtConnectionString.Items.OfType<string>()
+                    where s != null
+                    let strim = s.Trim()
+                    where strim.Length > 0
+                    select strim).ToArray() }
+            };
+            serializeJSONFile(recentSettingsPath, dict);
+        }
+
+        private void txtURL_Leave(object sender, EventArgs e)
+        {
+            if (!String.IsNullOrEmpty(txtURL.Text))
+            {
+                if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
+                    txtURL.Items.Add(txtURL.Text);
+            }
+            persistSettings();
+        }
+
+        private void txtConnectionString_Leave(object sender, EventArgs e)
+        {
+            if (!String.IsNullOrEmpty(txtConnectionString.Text))
+            {
+                if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
+                    txtConnectionString.Items.Add(txtConnectionString.Text);
+            }
+            persistSettings();
+        }
     }
 
     internal static class ExtensionMethods
     {
+        public static object[] ToArray(this ICollection col)
+        {
+            object[] arr = new object[col.Count];
+            col.CopyTo(arr, 0);
+            return arr;
+        }
+
         public static bool TryGetValueAs<TKey, TValue, TResult>(this IDictionary<TKey, TValue> dict, TKey key, Converter<TValue, TResult> convert, out TResult result)
         {
             TValue value;
