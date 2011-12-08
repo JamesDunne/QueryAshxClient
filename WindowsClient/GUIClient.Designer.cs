@@ -28,12 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle17 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle18 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle11 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle12 = new System.Windows.Forms.DataGridViewCellStyle();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.txtConnectionString = new System.Windows.Forms.ComboBox();
             this.txtURL = new System.Windows.Forms.ComboBox();
@@ -86,11 +86,11 @@
             this.pnlModifyResults = new System.Windows.Forms.Panel();
             this.dgModifyResults = new System.Windows.Forms.DataGridView();
             this.panel8 = new System.Windows.Forms.Panel();
+            this.btnModifyCommit = new System.Windows.Forms.Button();
             this.lblModifyTime = new System.Windows.Forms.Label();
             this.btnModifyTest = new System.Windows.Forms.Button();
             this.tbKeys = new System.Windows.Forms.TabPage();
             this.dlgImportKey = new System.Windows.Forms.OpenFileDialog();
-            this.btnModifyCommit = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tabControl1.SuspendLayout();
@@ -255,16 +255,16 @@
             // 
             this.txtQueryOrderBy.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQueryOrderBy.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtQueryOrderBy.Location = new System.Drawing.Point(87, 337);
+            this.txtQueryOrderBy.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQueryOrderBy.Location = new System.Drawing.Point(87, 344);
             this.txtQueryOrderBy.Name = "txtQueryOrderBy";
-            this.txtQueryOrderBy.Size = new System.Drawing.Size(311, 28);
+            this.txtQueryOrderBy.Size = new System.Drawing.Size(311, 24);
             this.txtQueryOrderBy.TabIndex = 16;
             // 
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(1, 340);
+            this.label15.Location = new System.Drawing.Point(1, 347);
             this.label15.Name = "label15";
             this.label15.Size = new System.Drawing.Size(80, 17);
             this.label15.TabIndex = 15;
@@ -274,16 +274,16 @@
             // 
             this.txtQueryHaving.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQueryHaving.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtQueryHaving.Location = new System.Drawing.Point(87, 309);
+            this.txtQueryHaving.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQueryHaving.Location = new System.Drawing.Point(87, 314);
             this.txtQueryHaving.Name = "txtQueryHaving";
-            this.txtQueryHaving.Size = new System.Drawing.Size(311, 28);
+            this.txtQueryHaving.Size = new System.Drawing.Size(311, 24);
             this.txtQueryHaving.TabIndex = 14;
             // 
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(1, 312);
+            this.label14.Location = new System.Drawing.Point(1, 317);
             this.label14.Name = "label14";
             this.label14.Size = new System.Drawing.Size(60, 17);
             this.label14.TabIndex = 13;
@@ -293,16 +293,16 @@
             // 
             this.txtQueryGroupBy.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQueryGroupBy.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQueryGroupBy.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryGroupBy.Location = new System.Drawing.Point(87, 284);
             this.txtQueryGroupBy.Name = "txtQueryGroupBy";
-            this.txtQueryGroupBy.Size = new System.Drawing.Size(311, 28);
+            this.txtQueryGroupBy.Size = new System.Drawing.Size(311, 24);
             this.txtQueryGroupBy.TabIndex = 12;
             // 
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(1, 284);
+            this.label13.Location = new System.Drawing.Point(1, 287);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(81, 17);
             this.label13.TabIndex = 11;
@@ -322,7 +322,7 @@
             this.txtQueryWhere.AcceptsReturn = true;
             this.txtQueryWhere.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQueryWhere.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQueryWhere.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryWhere.HideSelection = false;
             this.txtQueryWhere.Location = new System.Drawing.Point(87, 218);
             this.txtQueryWhere.Multiline = true;
@@ -345,7 +345,7 @@
             this.txtQueryFrom.AcceptsReturn = true;
             this.txtQueryFrom.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQueryFrom.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQueryFrom.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryFrom.HideSelection = false;
             this.txtQueryFrom.Location = new System.Drawing.Point(87, 155);
             this.txtQueryFrom.Multiline = true;
@@ -369,7 +369,7 @@
             this.txtQuerySelect.AcceptsReturn = true;
             this.txtQuerySelect.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQuerySelect.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQuerySelect.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQuerySelect.HideSelection = false;
             this.txtQuerySelect.Location = new System.Drawing.Point(87, 92);
             this.txtQuerySelect.Multiline = true;
@@ -401,7 +401,7 @@
             this.txtQueryWithExpression.AcceptsReturn = true;
             this.txtQueryWithExpression.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtQueryWithExpression.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQueryWithExpression.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryWithExpression.Location = new System.Drawing.Point(212, 4);
             this.txtQueryWithExpression.Multiline = true;
             this.txtQueryWithExpression.Name = "txtQueryWithExpression";
@@ -420,10 +420,10 @@
             // 
             // txtQueryWithIdentifier
             // 
-            this.txtQueryWithIdentifier.Font = new System.Drawing.Font("Cordia New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtQueryWithIdentifier.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtQueryWithIdentifier.Location = new System.Drawing.Point(87, 4);
             this.txtQueryWithIdentifier.Name = "txtQueryWithIdentifier";
-            this.txtQueryWithIdentifier.Size = new System.Drawing.Size(78, 28);
+            this.txtQueryWithIdentifier.Size = new System.Drawing.Size(78, 24);
             this.txtQueryWithIdentifier.TabIndex = 0;
             // 
             // pnlQueryResults
@@ -438,34 +438,34 @@
             // 
             // dgQueryResults
             // 
-            dataGridViewCellStyle16.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle16.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle16.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle16.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle16.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle16.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle16.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgQueryResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle16;
+            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle7.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle7.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle7.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle7.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle7.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle7.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
             this.dgQueryResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle17.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle17.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle17.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle17.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle17.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle17.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle17.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgQueryResults.DefaultCellStyle = dataGridViewCellStyle17;
+            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle8.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle8.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle8.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle8.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgQueryResults.DefaultCellStyle = dataGridViewCellStyle8;
             this.dgQueryResults.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgQueryResults.Location = new System.Drawing.Point(0, 23);
             this.dgQueryResults.Name = "dgQueryResults";
-            dataGridViewCellStyle18.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle18.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle18.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle18.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle18.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle18.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle18.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgQueryResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle18;
+            dataGridViewCellStyle9.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle9.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle9.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle9.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle9.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle9.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle9.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgQueryResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle9;
             this.dgQueryResults.RowTemplate.Height = 24;
             this.dgQueryResults.Size = new System.Drawing.Size(555, 435);
             this.dgQueryResults.TabIndex = 1;
@@ -709,34 +709,34 @@
             // 
             // dgModifyResults
             // 
-            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle13.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle13.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle13.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle13.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle13.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle13.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgModifyResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle13;
+            dataGridViewCellStyle10.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle10.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle10.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle10.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle10.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle10.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle10.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle10;
             this.dgModifyResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle14.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle14.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle14.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle14.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle14.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle14.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgModifyResults.DefaultCellStyle = dataGridViewCellStyle14;
+            dataGridViewCellStyle11.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle11.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle11.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle11.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle11.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle11.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle11.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgModifyResults.DefaultCellStyle = dataGridViewCellStyle11;
             this.dgModifyResults.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgModifyResults.Location = new System.Drawing.Point(0, 23);
             this.dgModifyResults.Name = "dgModifyResults";
-            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle15.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle15.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle15.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle15.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle15.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle15.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgModifyResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle15;
+            dataGridViewCellStyle12.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle12.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle12.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle12.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle12.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle12.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle12.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgModifyResults.RowHeadersDefaultCellStyle = dataGridViewCellStyle12;
             this.dgModifyResults.RowTemplate.Height = 24;
             this.dgModifyResults.Size = new System.Drawing.Size(555, 435);
             this.dgModifyResults.TabIndex = 1;
@@ -751,6 +751,19 @@
             this.panel8.Name = "panel8";
             this.panel8.Size = new System.Drawing.Size(555, 23);
             this.panel8.TabIndex = 0;
+            // 
+            // btnModifyCommit
+            // 
+            this.btnModifyCommit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnModifyCommit.Enabled = false;
+            this.btnModifyCommit.Location = new System.Drawing.Point(477, 0);
+            this.btnModifyCommit.Name = "btnModifyCommit";
+            this.btnModifyCommit.Size = new System.Drawing.Size(75, 23);
+            this.btnModifyCommit.TabIndex = 3;
+            this.btnModifyCommit.Tag = "";
+            this.btnModifyCommit.Text = "Commit";
+            this.btnModifyCommit.UseVisualStyleBackColor = true;
+            this.btnModifyCommit.Click += new System.EventHandler(this.btnModifyCommit_Click);
             // 
             // lblModifyTime
             // 
@@ -787,19 +800,6 @@
             // 
             this.dlgImportKey.FileName = "id_rsa";
             this.dlgImportKey.Title = "Import OpenSSL RSA private key";
-            // 
-            // btnModifyCommit
-            // 
-            this.btnModifyCommit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnModifyCommit.Enabled = false;
-            this.btnModifyCommit.Location = new System.Drawing.Point(477, 0);
-            this.btnModifyCommit.Name = "btnModifyCommit";
-            this.btnModifyCommit.Size = new System.Drawing.Size(75, 23);
-            this.btnModifyCommit.TabIndex = 3;
-            this.btnModifyCommit.Tag = "";
-            this.btnModifyCommit.Text = "Commit";
-            this.btnModifyCommit.UseVisualStyleBackColor = true;
-            this.btnModifyCommit.Click += new System.EventHandler(this.btnModifyCommit_Click);
             // 
             // GUIClient
             // 
