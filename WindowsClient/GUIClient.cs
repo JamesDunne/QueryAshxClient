@@ -988,6 +988,39 @@ namespace QueryAshx
         {
             setCommitEnabled(false);
         }
+
+        private void chkQueryWith_CheckedChanged(object sender, EventArgs e)
+        {
+            pnlQueryWith.Visible = chkQueryWith.Checked;
+            splQueryWith.Visible = chkQueryWith.Checked;
+        }
+
+        private void chkQueryFrom_CheckedChanged(object sender, EventArgs e)
+        {
+            pnlQueryFrom.Visible = chkQueryFrom.Checked;
+            splQueryFrom.Visible = chkQueryFrom.Checked;
+        }
+
+        private void chkQueryWhere_CheckedChanged(object sender, EventArgs e)
+        {
+            pnlQueryWhere.Visible = chkQueryWhere.Checked;
+            splQueryWhere.Visible = chkQueryWhere.Checked;
+        }
+
+        private void chkQueryGroupBy_CheckedChanged(object sender, EventArgs e)
+        {
+            pnlQueryGroupBy.Visible = chkQueryGroupBy.Checked;
+        }
+
+        private void chkQueryHaving_CheckedChanged(object sender, EventArgs e)
+        {
+            pnlQueryHaving.Visible = chkQueryHaving.Checked;
+        }
+
+        private void chkQueryOrderBy_CheckedChanged(object sender, EventArgs e)
+        {
+            pnlQueryOrderBy.Visible = chkQueryOrderBy.Checked;
+        }
     }
 
     internal static class ExtensionMethods
