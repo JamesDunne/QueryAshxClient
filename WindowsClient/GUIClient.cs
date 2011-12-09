@@ -610,6 +610,8 @@ namespace QueryAshx
             req.Accept = accept;
             req.ContentType = "application/x-www-form-urlencoded";
 
+            // TODO: BeginGetRequestStream
+
             // This opens a connection to the web site to write the POST data:
             using (var reqstr = req.GetRequestStream())
             using (var tw = new StreamWriter(reqstr))
@@ -661,17 +663,41 @@ namespace QueryAshx
             isCommitEnabled = enabled;
         }
 
+        /// <summary>
+        /// Make sure the value only shows up at the top of the list.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="value"></param>
+        private static void reorderList(IList list, string value)
+        {
+            for (int i = list.Count - 1; i >= 0; --i)
+                if (String.Equals((string)list[i], value, StringComparison.OrdinalIgnoreCase))
+                    list.RemoveAt(i);
+            list.Insert(0, value);
+        }
+
+        private static void moveSelectionToTop(ComboBox cbo)
+        {
+            cbo.BeginUpdate();
+            string selection = cbo.Text;
+            reorderList(cbo.Items, selection);
+            cbo.SelectedIndex = 0;
+            cbo.EndUpdate();
+        }
+
         private void persistSettings()
         {
             if (!String.IsNullOrEmpty(txtURL.Text))
             {
-                if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
-                    txtURL.Items.Insert(0, txtURL.Text);
+                moveSelectionToTop(txtURL);
+                //if (!txtURL.Items.OfType<string>().Contains(txtURL.Text, StringComparer.OrdinalIgnoreCase))
+                //    txtURL.Items.Insert(0, txtURL.Text);
             }
             if (!String.IsNullOrEmpty(txtConnectionString.Text))
             {
-                if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
-                    txtConnectionString.Items.Insert(0, txtConnectionString.Text);
+                moveSelectionToTop(txtConnectionString);
+                //if (!txtConnectionString.Items.OfType<string>().Contains(txtConnectionString.Text, StringComparer.OrdinalIgnoreCase))
+                //    txtConnectionString.Items.Insert(0, txtConnectionString.Text);
             }
             var dict = new Dictionary<string, object> {
                 { "urls", (
@@ -727,6 +753,12 @@ namespace QueryAshx
 
             // Load the private key file path:
             txtModifyPrivateKeyPath.Text = dict.GetValueOrDefaultAs("ppk", o => (string)o, String.Empty);
+
+            pnlQueryWith.Visible = false;
+            splQueryWith.Visible = false;
+            pnlQueryOrderBy.Visible = false;
+            pnlQueryHaving.Visible = false;
+            pnlQueryGroupBy.Visible = false;
         }
 
         private void btnModifyBrowsePrivateKeyPath_Click(object sender, EventArgs e)
@@ -792,21 +824,25 @@ namespace QueryAshx
                 req = req,
                 enableQueryPanels = () =>
                 {
+                    // On UI thread
                     pnlQuery.Enabled = true;
                     btnQueryExecute.Enabled = true;
                 },
                 dgResults = dgQueryResults,
                 reportQueryTime = (int msec) =>
                 {
+                    // On UI thread
                     lblQueryTime.Text = String.Format("Execution time: {0,6} msec", msec);
                 },
                 handleError = (dict) =>
                 {
+                    // On UI thread
                     string message = dict.GetValueOrDefaultAs("message", o => (string)o);
                     msgbox(message);
                 },
                 success = () =>
                 {
+                    // On UI thread
                 }
             };
 
@@ -883,6 +919,12 @@ namespace QueryAshx
 
             #endregion
 
+            // Disable reentrancy:
+            pnlModifyCommand.Enabled = false;
+            pnlModifyQuery.Enabled = false;
+            if (commitMode) btnModifyCommit.Enabled = false;
+            btnModifyTest.Enabled = false;
+
             byte[] data = Encoding.UTF8.GetBytes(cmd + "\n" + query);
             long timestampTicks = DateTime.UtcNow.Ticks;
             byte[] toSign = BitConverter.GetBytes(timestampTicks).Concat(data).ToArray();
@@ -892,8 +934,8 @@ namespace QueryAshx
             string pubkey64 = pubkeyToBase64(key);
             string signed64 = Convert.ToBase64String(signed);
 
-            Debug.WriteLine("public-key:\n{0}\n", pubkey64);
-            Debug.WriteLine("signed-hash:\n{0}\n", signed64);
+            Debug.WriteLine(String.Format("public-key:\n{0}\n", pubkey64));
+            Debug.WriteLine(String.Format("signed-hash:\n{0}\n", signed64));
 
             var postData = new Dictionary<string, string>
             {
@@ -920,17 +962,12 @@ namespace QueryAshx
                 return;
             }
 
-            // Disable reentrancy:
-            pnlModifyCommand.Enabled = false;
-            pnlModifyQuery.Enabled = false;
-            if (commitMode) btnModifyCommit.Enabled = false;
-            btnModifyTest.Enabled = false;
-
             var asyncst = new AsyncUpdateViewState()
             {
                 req = req,
                 enableQueryPanels = () =>
                 {
+                    // On UI thread
                     pnlModifyCommand.Enabled = true;
                     pnlModifyQuery.Enabled = true;
                     if (commitMode) btnModifyCommit.Enabled = true;
@@ -939,17 +976,20 @@ namespace QueryAshx
                 dgResults = dgModifyResults,
                 reportQueryTime = (int msec) =>
                 {
+                    // On UI thread
                     lblModifyTime.Text = String.Format("Execution time: {0,6} msec", msec);
                 },
                 handleError = (dict) =>
                 {
+                    // On UI thread
                     string message = dict.GetValueOrDefaultAs("message", o => (string)o);
                     msgbox(message);
                 },
                 success = () =>
                 {
+                    // On UI thread
                     // Set isCommitEnabled to true and enable the Commit button:
-                    UIMarshal(() => setCommitEnabled(true));
+                    setCommitEnabled(true);
                 }
             };
 
