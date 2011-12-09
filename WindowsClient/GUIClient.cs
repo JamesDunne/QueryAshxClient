@@ -458,6 +458,8 @@ namespace QueryAshx
             public Action<int> reportQueryTime;
             public Action<Dictionary<string, object>> handleError;
             public Action success;
+            public Dictionary<string, string> postData;
+            public AsyncCallback updateGrid;
         }
 
         private void responseCallbackUpdateGridResults(IAsyncResult iar)
@@ -603,28 +605,37 @@ namespace QueryAshx
             ).ToArray());
         }
 
-        private static HttpWebRequest createPOSTRequestFormEncoded(string url, string accept, Dictionary<string, string> postData)
+        private static void sendPOSTdata(IAsyncResult iar)
         {
-            var req = (HttpWebRequest)HttpWebRequest.Create(url);
-            req.Method = "POST";
-            req.Accept = accept;
-            req.ContentType = "application/x-www-form-urlencoded";
-
-            // TODO: BeginGetRequestStream
+            var asyncst = (AsyncUpdateViewState)iar.AsyncState;
 
             // This opens a connection to the web site to write the POST data:
-            using (var reqstr = req.GetRequestStream())
+            using (var reqstr = asyncst.req.EndGetRequestStream(iar))
             using (var tw = new StreamWriter(reqstr))
             {
                 bool isFirst = true;
-                foreach (KeyValuePair<string, string> pair in postData)
+                foreach (KeyValuePair<string, string> pair in asyncst.postData)
                 {
                     if (!isFirst) tw.Write('&'); else isFirst = false;
                     tw.Write("{0}={1}", pair.Key, HttpUtility.UrlEncode(pair.Value));
                 }
             }
 
-            return req;
+            // Asynchronously fetch the response and display the results to the DataGridView when complete:
+            asyncst.req.BeginGetResponse(asyncst.updateGrid, (object)asyncst);
+        }
+
+        private static void createPOSTRequestFormEncoded(string url, string accept, Dictionary<string, string> postData, AsyncCallback updateGrid, AsyncUpdateViewState asyncst)
+        {
+            var req = (HttpWebRequest)HttpWebRequest.Create(url);
+            req.Method = "POST";
+            req.Accept = accept;
+            req.ContentType = "application/x-www-form-urlencoded";
+
+            asyncst.req = req;
+            asyncst.postData = postData;
+            asyncst.updateGrid = updateGrid;
+            req.BeginGetRequestStream(new AsyncCallback(sendPOSTdata), asyncst);
         }
 
         #endregion
@@ -951,20 +962,8 @@ namespace QueryAshx
             // Construct the query string for the request:
             reqUrib.Query = UrlEncodeParameters(new Dictionary<string, string> { { "mu", commitMode ? "1" : "0" } });
 
-            HttpWebRequest req;
-            try
-            {
-                req = createPOSTRequestFormEncoded(reqUrib.Uri.AbsoluteUri, "application/json", postData);
-            }
-            catch (WebException wex)
-            {
-                msgbox(wex.Message);
-                return;
-            }
-
             var asyncst = new AsyncUpdateViewState()
             {
-                req = req,
                 enableQueryPanels = () =>
                 {
                     // On UI thread
@@ -993,8 +992,7 @@ namespace QueryAshx
                 }
             };
 
-            // Asynchronously fetch the response and display the results to the DataGridView when complete:
-            req.BeginGetResponse(new AsyncCallback(responseCallbackUpdateGridResults), (object)asyncst);
+            createPOSTRequestFormEncoded(reqUrib.Uri.AbsoluteUri, "application/json", postData, responseCallbackUpdateGridResults, asyncst);
         }
 
         #endregion
