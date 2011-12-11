@@ -494,7 +494,7 @@ namespace QueryAshx
                 using (var tr = new StreamReader(rspstr, Encoding.UTF8))
                 {
                     json = tr.ReadToEnd();
-                    //Debug.WriteLine(json);
+                    Debug.WriteLine(json);
                 }
 
                 // Deserialize the JSON:
