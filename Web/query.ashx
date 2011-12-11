@@ -1455,8 +1455,16 @@ $(function() {
         {
             rsp.Clear();
             rsp.StatusCode = statusCode;
-            rsp.ContentType = "text/html";
-            rsp.Write(HttpUtility.HtmlEncode(String.Format(messageFormat, args)));
+            rsp.ContentType = "application/json";
+            var final = new Dictionary<string, object> {
+                { "error", new Dictionary<string, object> {
+                    { "message", String.Format(messageFormat, args) }
+                } }
+            };
+            // Serialize the dictionary to JSON:
+            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+            string json = jss.Serialize(final);
+            rsp.Write(json);
         }
 
         // Handle data modification commands securely.
@@ -1489,22 +1497,30 @@ $(function() {
                 rowLimit = defaultRowLimit;
             }
 
-            // NOTE: allowing any data modification command except DDL statements
-            cmd = stripSQLComments(cmd);
-            if (containsSQLkeywords(cmd, "commit", "rollback", "create", "drop", "begin"))
+            try
             {
-                errorResponse(403, "Command contains restricted keywords");
+                // NOTE: allowing any data modification command except DDL statements
+                cmd = stripSQLComments(cmd);
+                if (containsSQLkeywords(cmd, "commit", "rollback", "create", "drop", "begin"))
+                {
+                    errorResponse(403, "Command contains restricted keywords");
+                    return;
+                }
+
+                // NOTE: assuming a SELECT query
+                query = stripSQLComments(query);
+                if (containsSQLkeywords(query, "commit", "rollback", "delete", "insert", "update", "create", "drop", "into"))
+                {
+                    errorResponse(403, "Query contains restricted keywords");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorResponse(403, ex.Message);
                 return;
             }
-
-            // NOTE: assuming a SELECT query
-            query = stripSQLComments(query);
-            if (containsSQLkeywords(query, "commit", "rollback", "delete", "insert", "update", "create", "drop", "into"))
-            {
-                errorResponse(403, "Query contains restricted keywords");
-                return;
-            }
-
+            
             // Build the SQL command to execute:
             string cmdtext =
 @"BEGIN TRAN
