@@ -20,8 +20,8 @@ James S. Dunne, bittwiddlers.org
  - HTML table showing query results
  - Several varieties of tool-friendly output modes in JSON or XML containers
  - Secured data mutation feature for submitting SQL queries to INSERT, UPDATE, DELETE data
- - - Secured access via RSA public key authorization
- - - Public key management: authorize/revoke public keys for access
- - - This functionality is only accessible via WindowsClient project due to security constraints
+     - Secured access via RSA public key authorization
+     - Public key management: authorize/revoke public keys for access
+     - This functionality is only accessible via WindowsClient project due to security constraints
  - Windows Forms client application for better user experience
  - Online self-update feature (downloads latest query.ashx code from github)
