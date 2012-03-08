@@ -645,14 +645,14 @@ $(function() {
                 tw.Write("<div id='resultsInner'>");
 
                 // Log the full absolute URL with host and path:
-                string execURL = createURL().ToString();
+                string execURL = createURL().PathAndQuery;
                 logQuery(query, execURL);
 
-                string jsonURL = createURL("output", "json").ToString();
-                string json2URL = createURL("output", "json2").ToString();
-                string json3URL = createURL("output", "json3").ToString();
-                string xmlURL = createURL("output", "xml").ToString();
-                string xml2URL = createURL("output", "xml2").ToString();
+                string jsonURL = createURL("output", "json").PathAndQuery;
+                string json2URL = createURL("output", "json2").PathAndQuery;
+                string json3URL = createURL("output", "json3").PathAndQuery;
+                string xmlURL = createURL("output", "xml").PathAndQuery;
+                string xml2URL = createURL("output", "xml2").PathAndQuery;
 
                 tw.Write("<div style='clear: both;'>");
                 // Create a link to share this query with:
