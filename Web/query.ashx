@@ -1046,6 +1046,8 @@ $(function() {
             having = getFormOrQueryValue("having");
             orderBy = getFormOrQueryValue("orderBy");
 
+            string callback = getFormOrQueryValue("callback");
+
             // Validate and convert parameters:
             ParameterValue[] parameters;
             bool parametersValid = convertParameters(out parameters);
@@ -1104,14 +1106,26 @@ $(function() {
             {
                 // TODO: more verbose error reporting
                 final.Add("error", new Dictionary<string, object> { { "message", errMessage } });
+                if (callback != null)
+                {
+                    tw.Write(callback);
+                    tw.Write('(');
+                }
                 tw.Write(jss.Serialize(final));
+                if (callback != null) tw.Write(");");
                 return;
             }
 
             final.Add("time", execTimeMsec);
             getJSONDictionary(final, mode, noQuery, noHeader, header, rows);
 
+            if (callback != null)
+            {
+                tw.Write(callback);
+                tw.Write('(');
+            }
             tw.Write(jss.Serialize(final));
+            if (callback != null) tw.Write(");");
         }
 
         private void getJSONDictionary(Dictionary<string, object> final, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
