@@ -8,8 +8,6 @@
 // Designed and implemented by James S. Dunne (github.com/JamesDunne)
 // on 2011-10-13
 
-// This file was sourced from gist.github.com/1286172
-
 // TODO: add optional TOP(N) clause
 // TODO: AJAX requests for all data
 
@@ -265,6 +263,11 @@ p, li
     font-size: small;
 }
 
+.nowrap
+{
+    white-space: nowrap;
+}
+
 pre, textarea, .monospaced, td.hexvalue
 {
     font-family: Anonymous Pro, Anonymous, Consolas, Courier New, Courier;
@@ -292,6 +295,11 @@ td>pre
     margin: 0
 }
 
+td.text
+{
+    padding-right: 8px;
+}
+
 .input-table
 {
     font-family: Tahoma, Segoe UI, Arial;
@@ -308,7 +316,7 @@ td>pre
 
 .input-table>caption,.input-table>thead,.input-table>tfoot
 {
-    background-color: #3ef;
+    background-color: #def;
 }
 
 .input-table>tbody>tr:nth-child(even)
@@ -330,8 +338,7 @@ div#resultsInner
 div#resultsTableDiv
 {
     clear: both;
-    max-width: 1280;
-    max-height: 30em;
+    max-height: 48em;
     overflow-x: auto;
     overflow-y: auto;
 }
@@ -378,9 +385,9 @@ th
     text-align: left;
 }
 
-th.coltype
+textarea
 {
-    background-color: #fec;
+    overflow: auto;
 }
 
 #footer
@@ -450,9 +457,9 @@ th.coltype
 
             // Default tab is 'Query':
             int selectedTabIndex = 0;
-            if (actionExecute && parametersValid) selectedTabIndex = 2;
-            else if (actionLog) selectedTabIndex = 2;
-            else if (message != null) selectedTabIndex = 3;
+            if (actionExecute && parametersValid) selectedTabIndex = 0;
+            else if (actionLog) selectedTabIndex = 1;
+            else if (message != null) selectedTabIndex = 2;
 
             // Now write out the javascript to allow toggling of show/hide per each query builder row:
             tw.WriteLine(@"<script type=""text/javascript""><!--
@@ -479,26 +486,8 @@ $(function() {
     $('.btnRemove').click(removeHandler);
 
     $('#btnAddParameter').click(function() {
-        $('#parametersBody').append('<tr><td><button class=\'btnRemove\'>-</button></td><td><input type=\'text\' name=\'pn\' /></td><td><select name=\'pt\'>" + sqlTypesOptionList + @"</select></td><td><input type=\'text\' name=\'pv\' size=\'60\' /></td></tr>');
+        $('#parametersBody').append('<tr><td><button class=\'btnRemove\'>-</button></td><td class=\'text\'><input type=\'text\' name=\'pn\' style=\'width:100%\' /></td><td><select name=\'pt\'>" + sqlTypesOptionList + @"</select></td><td class=\'text\'><input type=\'text\' name=\'pv\' size=\'60\' style=\'width:100%\' /></td></tr>');
         $('.btnRemove').button().unbind('click').bind('click', removeHandler);
-        return false;
-    });
-
-    var coltypeVisible = false;
-    $('#toggleColumnTypeHeaders').click(function() {
-        // Toggle the visibility of the coltype header cells:
-        if (coltypeVisible)
-        {
-            $('th.coltype').hide().prev().attr('colspan', 2);
-            $(this).button('option', 'label', 'Show Types');
-            coltypeVisible = false;
-        }
-        else
-        {
-            $('th.coltype').show().prev().removeAttr('colspan');
-            $(this).button('option', 'label', 'Hide Types');
-            coltypeVisible = true;
-        }
         return false;
     });
 });
@@ -509,287 +498,293 @@ $(function() {
             tw.Write("</head><body bgcolor='#ffffff' text='#222222' link='#1122cc' vlink='#6611cc' alink='#d14836'>");
 
             // Create the main form wrapper:
-            tw.Write("<div><form method=\"post\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
+            tw.Write("<div><form method=\"get\" action=\"{0}\">", HttpUtility.HtmlAttributeEncode(req.Url.AbsolutePath));
 
 
             // Tabs container:
             tw.Write("<div id='tabs'>\n");
             tw.Write("<ul>");
-            tw.Write("<li><a href='#tab-builder'>Query</a></li>");
+            tw.Write("<li><a href='#tab-query'>Query</a></li>");
+#if false
             tw.Write("<li><a href='#tab-connections'>Connection</a></li>");
             if (actionExecute && parametersValid) tw.Write("<li><a href='#tab-results'>Results</a></li>");
+#endif
             tw.Write("<li><a href='#tab-log'>Query Log</a></li>");
             tw.Write("<li><a href='#tab-self-update'>Update</a></li>");
             tw.Write("</ul>\n");
 
-
-            // Query-builder tab:
+            // Query tab:
+            tw.Write("<div id='tab-query'>");
             {
-                tw.Write("<div id='tab-builder'>");
+                tw.Write("<table border='1' cellspacing='0' cellpadding='2' style='width:100%'><tbody>\n");
 
-                tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
-                tw.Write("<tr><td>&nbsp;</td><td>");
-                tw.Write("<button id='btnWITH'    >WITH</button>");
-                tw.Write("<button id='btnSELECT' disabled='disabled' >SELECT</button>");
-                tw.Write("<button id='btnFROM'    >FROM</button>");
-                tw.Write("<button id='btnWHERE'   >WHERE</button>");
-                tw.Write("<button id='btnGROUPBY' >GROUP BY</button>");
-                tw.Write("<button id='btnHAVING'  >HAVING</button>");
-                tw.Write("<button id='btnORDERBY' >ORDER BY</button>");
-                tw.Write("</td></tr>");
-                tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;'>{1}</textarea>)</td></tr>",
-                    HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
-                    HttpUtility.HtmlEncode(withCTEexpression),
-                    (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
-                );
-                tw.Write("<tr><td class='monospaced sqlkeyword'>SELECT</td><td><textarea name='select' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowFROM'><td class='monospaced sqlkeyword'>FROM</td><td><textarea name='from' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowWHERE'><td class='monospaced sqlkeyword'>WHERE</td><td><textarea name='where' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
-                tw.Write("<tr id='rowGROUPBY'><td class='monospaced sqlkeyword'>GROUP BY</td><td><textarea name='groupBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr id='rowHAVING'><td class='monospaced sqlkeyword'>HAVING</td><td><textarea name='having' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("<tr id='rowORDERBY'><td class='monospaced sqlkeyword'>ORDER BY</td><td><textarea name='orderBy' cols='100' rows='{1}'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
-                tw.Write("</tbody></table>");
-
-                // Parameters:
-                tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2'>");
-                tw.Write("<caption>Parameters</caption>");
-                tw.Write("<thead><tr><th style='width: 1em;'>&nbsp;</th><th style='width: 10em;'>Name</th><th style='width: 10em;'>Type</th><th style='width: 30em;'>Value</th></tr></thead>");
-                tw.Write("<tbody id='parametersBody'>");
-
-                for (int i = 0; i < parameters.Length; ++i)
+                // Connection Manager:
+                tw.Write("<tr><td>");
                 {
-                    tw.Write("<tr><td><button class='btnRemove'>-</button></td><td><input type='text' name='pn' value='{0}'></input></td><td><select name='pt'>{1}</select></td><td><input type='text' name='pv' size='60' value='{2}'></input>{3}</td></tr>",
-                        HttpUtility.HtmlAttributeEncode(parameters[i].Name),
-                        generateOptionList(sqlTypes, parameters[i].RawType),
-                        HttpUtility.HtmlAttributeEncode(parameters[i].RawValue),
-                        parameters[i].IsValid ? String.Empty : String.Format("<br/><span class='error'>{0}</span>", HttpUtility.HtmlEncode(parameters[i].ValidationMessage))
-                    );
-                }
-
-                tw.Write("</tbody>");
-                tw.Write("<tfoot>");
-                tw.Write("<tr><td>&nbsp;</td><td colspan='3'><span style='float: right;'><button id='btnAddParameter'>Add</button></span></td></tr>");
-                tw.Write("</tfoot>");
-                tw.Write("</table>");
-
-                // Execute button:
-                tw.Write("<input type='submit' name='action' value='Execute' />");
-
-                tw.Write("</div>\n"); // id='tab-builder'
-            }
-
-
-            // Connection Manager:
-            {
-                tw.Write("<div id='tab-connections'><table class='input-table' border='0' cellspacing='0' cellpadding='2'><tbody>");
+                    tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2' style='width:100%'><tbody>");
 #if true
-                // Drop-down for named connection strings:
-                tw.Write("<tr><td>Named connection string:</td><td><select name='csname'>");
-                tw.Write("<option value=''{0}>-- Use custom connection string --</option>", String.Equals(csname ?? "", "", StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty);
-                foreach (System.Configuration.ConnectionStringSettings css in System.Configuration.ConfigurationManager.ConnectionStrings)
-                {
-                    tw.Write("<option value='{0}'{3}>[{1}] -- {2}</option>",
-                        HttpUtility.HtmlAttributeEncode(css.Name),
-                        HttpUtility.HtmlEncode(css.Name),
-                        HttpUtility.HtmlEncode(css.ConnectionString),
-                        String.Equals(csname, css.Name, StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty
-                    );
-                }
-                tw.Write("</select></td></tr>");
-#else
-            tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
-#endif
-                tw.Write("<tr><td>Custom connection string:</td><td><input type='text' name='cs' size='110' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
-                tw.Write("</tbody></table></div>\n");
-            }
-
-
-            // Execution:
-            if (actionExecute && parametersValid)
-            {
-                string query;
-                string[,] header;
-                IEnumerable<IEnumerable<object>> rows;
-                long execTimeMsec;
-
-                // Execute the query:
-                string errMessage;
-                try
-                {
-                    errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
-                }
-                catch (Exception ex)
-                {
-                    errMessage = ex.Message;
-                    query = null;
-                    execTimeMsec = 0;
-                    rows = null;
-                    header = null;
-                }
-
-                tw.Write("<div id='tab-results'>");
-                if (query != null)
-                {
-                    tw.Write("<div id='query'><h3>Query</h3><pre>{0}</pre></div>", HttpUtility.HtmlEncode(query));
-                }
-
-                if (errMessage != null)
-                {
-                    tw.Write("<div id='resultsView'><h3>Error</h3><div id='resultsInner'><span class='exception'>{0}</span></div></div>", HttpUtility.HtmlEncode(errMessage));
-                    goto end;
-                }
-
-                // Output table:
-                tw.Write("<div id='resultsView'>");
-                tw.Write("<h3>Results</h3>");
-                tw.Write("<div id='resultsInner'>");
-
-                // Log the full absolute URL with host and path:
-                string execURL = createURL().PathAndQuery;
-                logQuery(query, execURL);
-
-                string jsonURL = createURL("output", "json").PathAndQuery;
-                string json2URL = createURL("output", "json2").PathAndQuery;
-                string json3URL = createURL("output", "json3").PathAndQuery;
-                string xmlURL = createURL("output", "xml").PathAndQuery;
-                string xml2URL = createURL("output", "xml2").PathAndQuery;
-
-                tw.Write("<div style='clear: both;'>");
-                // Create a link to share this query with:
-                tw.Write("<a class=\"button\" href=\"{0}\" target='_blank'>link</a>", HttpUtility.HtmlAttributeEncode(execURL));
-                // Create a link to produce JSON output:
-                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", HttpUtility.HtmlAttributeEncode(jsonURL));
-                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", HttpUtility.HtmlAttributeEncode(json2URL));
-                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", HttpUtility.HtmlAttributeEncode(json3URL));
-                // Create a link to produce XML output:
-                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", HttpUtility.HtmlAttributeEncode(xmlURL));
-                tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", HttpUtility.HtmlAttributeEncode(xml2URL));
-                tw.Write("</div>");
-
-                // Timing information:
-                tw.Write("<div style='clear: both;'>");
-                tw.Write("<div style='float: left; margin-top: 1em'>");
-                tw.Write("<strong>ROWCOUNT limit:</strong>&nbsp;{0}<br/>", rowLimit);
-                tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
-                tw.Write("</div>");
-                tw.Write("<div style='float: right;'>");
-                tw.Write("<button id='toggleColumnTypeHeaders'>Show Types</button><br/>");
-                tw.Write("</div>");
-                tw.Write("</div>");
-
-                // TABLE output:
-                tw.Write("<div id='resultsTableDiv'>");
-                tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
-
-                int rowNumber = 1;
-                foreach (IEnumerable<object> row in rows)
-                {
-                    if ((rowNumber - 1) % 10 == 0)
+                    // Drop-down for named connection strings:
+                    tw.Write("<tr><td class='nowrap'>Named connection string:</td><td class='text'><select name='csname' style='width:100%'>");
+                    tw.Write("<option value=''{0}>-- Use custom connection string --</option>", String.Equals(csname ?? "", "", StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty);
+                    foreach (System.Configuration.ConnectionStringSettings css in System.Configuration.ConfigurationManager.ConnectionStrings)
                     {
-                        // Write header:
-                        if (rowNumber > 1) tw.Write("</tbody>\n");
-                        tw.Write("<thead><tr><th>Row</th>");
-                        for (int h = 0; h <= header.GetUpperBound(0); ++h)
-                        {
-                            tw.Write("<th class='colname' colspan='2'>{0}</th><th class='coltype' style='display: none;'>{1}</th>", HttpUtility.HtmlEncode(header[h, 0]), HttpUtility.HtmlEncode(header[h, 1]));
-                        }
-                        tw.Write("</tr></thead>\n<tbody>");
+                        tw.Write("<option value='{0}'{3}>[{1}] -- {2}</option>",
+                            HttpUtility.HtmlAttributeEncode(css.Name),
+                            HttpUtility.HtmlEncode(css.Name),
+                            HttpUtility.HtmlEncode(css.ConnectionString),
+                            String.Equals(csname, css.Name, StringComparison.OrdinalIgnoreCase) ? " selected='selected'" : String.Empty
+                        );
+                    }
+                    tw.Write("</select></td></tr>");
+#else
+                    tw.Write("<tr><td>Named connection string:</td><td><input type='text' name='csname' size='40' value='{0}' /></td></tr>", HttpUtility.HtmlAttributeEncode(csname ?? ""));
+#endif
+                    tw.Write("<tr><td class='nowrap'>Custom connection string:</td><td class='text'><input type='text' name='cs' value='{0}' style='width:100%' /></td></tr>", HttpUtility.HtmlAttributeEncode(cs ?? ""));
+                    tw.Write("</tbody></table>\n");
+                }
+                tw.Write("</td></tr>\n");
+
+                // Query builder section:
+                tw.Write("<tr><td>");
+                {
+                    tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2' style='width:100%'><tbody>");
+                    tw.Write("<tr><td>&nbsp;</td><td>");
+                    tw.Write("<button id='btnWITH'    >WITH</button>");
+                    tw.Write("<button id='btnSELECT' disabled='disabled' >SELECT</button>");
+                    tw.Write("<button id='btnFROM'    >FROM</button>");
+                    tw.Write("<button id='btnWHERE'   >WHERE</button>");
+                    tw.Write("<button id='btnGROUPBY' >GROUP BY</button>");
+                    tw.Write("<button id='btnHAVING'  >HAVING</button>");
+                    tw.Write("<button id='btnORDERBY' >ORDER BY</button>");
+                    tw.Write("</td></tr>");
+                    tw.Write("<tr id='rowWITH'><td class='monospaced sqlkeyword'>WITH</td><td class='text' style='vertical-align: middle'><input type='text' name='wi' size='12' value='{0}'/> <span class='monospaced sqlkeyword'>AS</span> (<textarea name='we' cols='78' rows='{2}' style='vertical-align: middle;width:85%'>{1}</textarea>)</td></tr>",
+                        HttpUtility.HtmlAttributeEncode(withCTEidentifier ?? ""),
+                        HttpUtility.HtmlEncode(withCTEexpression),
+                        (withCTEexpression ?? "").Count(ch => ch == '\n') + 2
+                    );
+                    tw.Write("<tr><td class='monospaced nowrap sqlkeyword'>SELECT</td><td class='text'><textarea name='select' cols='100' rows='{1}' style='width:100%'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(select ?? ""), (select ?? "").Count(ch => ch == '\n') + 2);
+                    tw.Write("<tr id='rowFROM'><td class='monospaced nowrap sqlkeyword'>FROM</td><td class='text'><textarea name='from' cols='100' rows='{1}' style='width:100%'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(from ?? ""), (from ?? "").Count(ch => ch == '\n') + 2);
+                    tw.Write("<tr id='rowWHERE'><td class='monospaced nowrap sqlkeyword'>WHERE</td><td class='text'><textarea name='where' cols='100' rows='{1}' style='width:100%'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(where ?? ""), (where ?? "").Count(ch => ch == '\n') + 2);
+                    tw.Write("<tr id='rowGROUPBY'><td class='monospaced nowrap sqlkeyword'>GROUP BY</td><td class='text'><textarea name='groupBy' cols='100' rows='{1}' style='width:100%'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(groupBy ?? ""), (groupBy ?? "").Count(ch => ch == '\n') + 1);
+                    tw.Write("<tr id='rowHAVING'><td class='monospaced nowrap sqlkeyword'>HAVING</td><td class='text'><textarea name='having' cols='100' rows='{1}' style='width:100%'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(having ?? ""), (having ?? "").Count(ch => ch == '\n') + 1);
+                    tw.Write("<tr id='rowORDERBY'><td class='monospaced nowrap sqlkeyword'>ORDER BY</td><td class='text'><textarea name='orderBy' cols='100' rows='{1}' style='width:100%'>{0}</textarea></td></tr>", HttpUtility.HtmlEncode(orderBy ?? ""), (orderBy ?? "").Count(ch => ch == '\n') + 1);
+                    tw.Write("</tbody></table>");
+
+                    // Parameters:
+                    tw.Write("<table class='input-table' border='0' cellspacing='0' cellpadding='2' style='width:100%'>");
+                    tw.Write("<caption>Parameters</caption>");
+                    tw.Write("<thead><tr><th style='width: 1em;'>&nbsp;</th><th style='width: 10em;'>Name</th><th style='width: 10em;'>Type</th><th style='width: 30em;'>Value</th></tr></thead>");
+                    tw.Write("<tbody id='parametersBody'>");
+
+                    for (int i = 0; i < parameters.Length; ++i)
+                    {
+                        tw.Write("<tr><td><button class='btnRemove'>-</button></td><td class='text'><input type='text' name='pn' style='width:100%' value='{0}'></input></td><td><select name='pt'>{1}</select></td><td class='text'><input type='text' name='pv' size='60' style='width:100%' value='{2}'></input>{3}</td></tr>",
+                            HttpUtility.HtmlAttributeEncode(parameters[i].Name),
+                            generateOptionList(sqlTypes, parameters[i].RawType),
+                            HttpUtility.HtmlAttributeEncode(parameters[i].RawValue),
+                            parameters[i].IsValid ? String.Empty : String.Format("<br/><span class='error'>{0}</span>", HttpUtility.HtmlEncode(parameters[i].ValidationMessage))
+                        );
                     }
 
-                    tw.Write("<tr>");
-                    tw.Write("<td class='rn'>{0}</td>", rowNumber++);
+                    tw.Write("</tbody>");
+                    tw.Write("<tfoot>");
+                    tw.Write("<tr><td>&nbsp;</td><td colspan='3'><span style='float: right;'><button id='btnAddParameter'>Add</button></span></td></tr>");
+                    tw.Write("</tfoot>");
+                    tw.Write("</table>");
 
-                    using (var rowen = row.GetEnumerator())
-                        for (int colnum = 0; rowen.MoveNext(); ++colnum)
+                    // Execute button:
+                    tw.Write("<input type='submit' name='action' value='Execute' />");
+                }
+                tw.Write("</td></tr>\n");
+
+                // Results section:
+                if (actionExecute && parametersValid)
+                {
+                    string query;
+                    string[,] header;
+                    IEnumerable<IEnumerable<object>> rows;
+                    long execTimeMsec;
+
+                    // Execute the query:
+                    string errMessage;
+                    try
+                    {
+                        errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
+                    }
+                    catch (Exception ex)
+                    {
+                        errMessage = ex.Message;
+                        query = null;
+                        execTimeMsec = 0;
+                        rows = null;
+                        header = null;
+                    }
+
+                    tw.Write("<tr><td>");
+                    {
+                        if (query != null)
                         {
-                            object col = rowen.Current;
+                            tw.Write("<div id='query'><h3>Query</h3><pre>{0}</pre></div>", HttpUtility.HtmlEncode(query));
+                        }
 
-                            string align = null;
-                            bool isNobr = false, pre = false;
-                            string tdclass = null;
+                        if (errMessage != null)
+                        {
+                            tw.Write("<div id='resultsView'><h3>Error</h3><div id='resultsInner'><span class='exception'>{0}</span></div></div>", HttpUtility.HtmlEncode(errMessage));
+                            goto end;
+                        }
 
-                            // Use the SQL type to determine column alignment:
-                            string sqltype = header[colnum, 1];
-                            if (sqltype == "int" || sqltype == "decimal" || sqltype == "double" || sqltype == "money")
-                                align = "right";
-                            else if (sqltype == "datetime" || sqltype == "datetimeoffset" || sqltype == "datetime2")
-                                isNobr = true;
-                            else if (sqltype == "char")
-                                pre = true;
+                        // Output table:
+                        tw.Write("<div id='resultsView'>");
+                        tw.Write("<h3>Results</h3>");
+                        tw.Write("<div id='resultsInner'>");
 
-                            // Allow request variables to override certain column formattings:
-                            string q;
-                            q = req[String.Format("_c{0}pre", colnum)];
-                            if (q != null) pre = (q == "1");
-                            q = req[String.Format("_c{0}align", colnum)];
-                            if (q != null) align = q;
-                            q = req[String.Format("_c{0}nobr", colnum)];
-                            if (q != null) isNobr = (q == "1");
+                        // Log the full absolute URL with host and path:
+                        string execURL = createURL().PathAndQuery;
+                        logQuery(query, execURL);
 
-                            string colvalue;
-                            if ((col == null) || (col == DBNull.Value))
+                        string jsonURL = createURL("output", "json").PathAndQuery;
+                        string json2URL = createURL("output", "json2").PathAndQuery;
+                        string json3URL = createURL("output", "json3").PathAndQuery;
+                        string xmlURL = createURL("output", "xml").PathAndQuery;
+                        string xml2URL = createURL("output", "xml2").PathAndQuery;
+
+                        tw.Write("<div style='clear: both;'>");
+                        // Create a link to share this query with:
+                        tw.Write("<a class=\"button\" href=\"{0}\" target='_blank'>link</a>", HttpUtility.HtmlAttributeEncode(execURL));
+                        // Create a link to produce JSON output:
+                        tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as key-value objects; easiest for object-relational mapping scenario but column names may be appended with numeric suffixes in the event of non-unique keys'>JSON objects</a>", HttpUtility.HtmlAttributeEncode(jsonURL));
+                        tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of {{name, value}} pair objects; easiest for consuming in a metadata-oriented scenario but can be bloated'>JSON {{name, value}} pairs</a>", HttpUtility.HtmlAttributeEncode(json2URL));
+                        tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs JSON with rows as arrays of raw values in column order; easiest for consuming raw data where column names are unimportant'>JSON arrays</a>", HttpUtility.HtmlAttributeEncode(json3URL));
+                        // Create a link to produce XML output:
+                        tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column name=\"column_name\"&gt;value&lt;/column&gt;; easiest to consume in a metadata-oriented scenario'>XML fixed elements</a>", HttpUtility.HtmlAttributeEncode(xmlURL));
+                        tw.Write("&nbsp;<a class=\"button\" href=\"{0}\" target='_blank' title='Outputs XML with columns as &lt;column_name&gt;value&lt;/column_name&gt; easiest for object-relational mapping scenario but column names are sanitized for XML compliance and may be appended with numeric suffixes in the event of uniqueness collisions'>XML named elements</a>", HttpUtility.HtmlAttributeEncode(xml2URL));
+                        tw.Write("</div>");
+
+                        // Timing information:
+                        tw.Write("<div style='clear: both;'>");
+                        tw.Write("<div style='float: left; margin-top: 1em'>");
+                        tw.Write("<strong>ROWCOUNT limit:</strong>&nbsp;{0}<br/>", rowLimit);
+                        tw.Write("<strong>Last executed:</strong>&nbsp;{1}<br/><strong>Execution time:</strong>&nbsp;{0:N0} ms<br/>", execTimeMsec, DateTimeOffset.Now);
+                        tw.Write("</div>");
+                        tw.Write("</div>");
+
+                        // TABLE output:
+                        tw.Write("<div id='resultsTableDiv'>");
+                        tw.Write("<table id='resultsTable' border='1' cellspacing='0' cellpadding='2'>\n");
+
+                        int rowNumber = 1;
+                        foreach (IEnumerable<object> row in rows)
+                        {
+                            if ((rowNumber - 1) % 10 == 0)
                             {
-                                // Display NULL value:
-                                colvalue = "NULL";
-                                tdclass = "nullvalue";
-                            }
-                            else
-                            {
-                                // Check type of the vaue:
-                                Type ctype = col.GetType();
-                                if (ctype == typeof(byte[]))
+                                // Write header:
+                                if (rowNumber > 1) tw.Write("</tbody>\n");
+                                tw.Write("<thead><tr><th>Row</th>");
+                                for (int h = 0; h <= header.GetUpperBound(0); ++h)
                                 {
-                                    // Display byte[] as 0xHEXCHARS:
-                                    byte[] bytes = (byte[])col;
-                                    colvalue = HttpUtility.HtmlEncode(toHexString(bytes));
-                                    tdclass = "hexvalue";
+                                    tw.Write("<th class='colname'><span title='{1}'>{0}</span></th>", HttpUtility.HtmlEncode(header[h, 0]), HttpUtility.HtmlAttributeEncode(header[h, 1]));
                                 }
-                                else
+                                tw.Write("</tr></thead>\n<tbody>");
+                            }
+
+                            tw.Write("<tr>");
+                            tw.Write("<td class='rn'>{0}</td>", rowNumber++);
+
+                            using (var rowen = row.GetEnumerator())
+                                for (int colnum = 0; rowen.MoveNext(); ++colnum)
                                 {
-                                    // All else, use TypeConverter.ConvertToString:
-                                    var tc = System.ComponentModel.TypeDescriptor.GetConverter(ctype);
-                                    colvalue = tc.ConvertToString(col);
+                                    object col = rowen.Current;
 
-                                    bool containsNewLines = (colvalue.IndexOfAny(new char[] { '\r', '\n' }) >= 0);
+                                    string align = null;
+                                    bool isNobr = false, pre = false;
+                                    string tdclass = null;
 
-                                    colvalue = HttpUtility.HtmlEncode(colvalue);
-
-                                    // Use a <nobr> around short-enough columns that include word-breaking chars.
-                                    if ((colvalue.Length <= 60) && !containsNewLines)
+                                    // Use the SQL type to determine column alignment:
+                                    string sqltype = header[colnum, 1];
+                                    if (sqltype == "int" || sqltype == "decimal" || sqltype == "double" || sqltype == "money")
+                                        align = "right";
+                                    else if (sqltype == "datetime" || sqltype == "datetimeoffset" || sqltype == "datetime2")
                                         isNobr = true;
+                                    else if (sqltype == "char")
+                                        pre = true;
 
-                                    // Convert '\n' to "<br/>":
-                                    if (containsNewLines)
-                                        colvalue = colvalue.Replace("\r", String.Empty).Replace("\n", "<br/>");
-                                }
-                            }
+                                    // Allow request variables to override certain column formattings:
+                                    string q;
+                                    q = req[String.Format("_c{0}pre", colnum)];
+                                    if (q != null) pre = (q == "1");
+                                    q = req[String.Format("_c{0}align", colnum)];
+                                    if (q != null) align = q;
+                                    q = req[String.Format("_c{0}nobr", colnum)];
+                                    if (q != null) isNobr = (q == "1");
 
-                            string attrs = String.Empty;
-                            string wrapperElementStart = String.Empty;
-                            string wrapperElementEnd = String.Empty;
+                                    string colvalue;
+                                    if ((col == null) || (col == DBNull.Value))
+                                    {
+                                        // Display NULL value:
+                                        colvalue = "NULL";
+                                        tdclass = "nullvalue";
+                                    }
+                                    else
+                                    {
+                                        // Check type of the vaue:
+                                        Type ctype = col.GetType();
+                                        if (ctype == typeof(byte[]))
+                                        {
+                                            // Display byte[] as 0xHEXCHARS:
+                                            byte[] bytes = (byte[])col;
+                                            colvalue = HttpUtility.HtmlEncode(toHexString(bytes));
+                                            tdclass = "hexvalue";
+                                        }
+                                        else
+                                        {
+                                            // All else, use TypeConverter.ConvertToString:
+                                            var tc = System.ComponentModel.TypeDescriptor.GetConverter(ctype);
+                                            colvalue = tc.ConvertToString(col);
 
-                            if (tdclass != null) attrs += " class='" + tdclass + "'";
-                            if (align != null) attrs += " style='text-align: " + align + ";'";
-                            if (isNobr) { wrapperElementStart += "<nobr>"; wrapperElementEnd = "</nobr>" + wrapperElementEnd; }
-                            if (pre) { wrapperElementStart += "<pre>"; wrapperElementEnd = "</pre>" + wrapperElementEnd; }
+                                            bool containsNewLines = (colvalue.IndexOfAny(new char[] { '\r', '\n' }) >= 0);
 
-                            // NOTE: colvalue is HTML-encoded.
-                            tw.Write("<td colspan='2'{1}>{2}{0}{3}</td>", colvalue, attrs, wrapperElementStart, wrapperElementEnd);
-                        } // foreach (object col in row)
+                                            colvalue = HttpUtility.HtmlEncode(colvalue);
 
-                    tw.Write("</tr>\n");
-                } // foreach (IEnumerable<object> row in rows)
+                                            // Use a <nobr> around short-enough columns that include word-breaking chars.
+                                            if ((colvalue.Length <= 60) && !containsNewLines)
+                                                isNobr = true;
 
-                tw.Write("</tbody>\n");
-                tw.Write("</table>");
+                                            // Convert '\n' to "<br/>":
+                                            if (containsNewLines)
+                                                colvalue = colvalue.Replace("\r", String.Empty).Replace("\n", "<br/>");
+                                        }
+                                    }
 
-                tw.Write("</div>"); // id='resultsTableDiv'
-                tw.Write("</div></div>");
+                                    string attrs = String.Empty;
+                                    string wrapperElementStart = String.Empty;
+                                    string wrapperElementEnd = String.Empty;
 
-            end:
-                tw.Write("</div>\n"); // id='tab-results'
+                                    if (tdclass != null) attrs += " class='" + tdclass + "'";
+                                    if (align != null) attrs += " style='text-align: " + align + ";'";
+                                    if (isNobr) { wrapperElementStart += "<nobr>"; wrapperElementEnd = "</nobr>" + wrapperElementEnd; }
+                                    if (pre) { wrapperElementStart += "<pre>"; wrapperElementEnd = "</pre>" + wrapperElementEnd; }
+
+                                    // NOTE: colvalue is HTML-encoded.
+                                    tw.Write("<td{1}>{2}{0}{3}</td>", colvalue, attrs, wrapperElementStart, wrapperElementEnd);
+                                } // foreach (object col in row)
+
+                            tw.Write("</tr>\n");
+                        } // foreach (IEnumerable<object> row in rows)
+
+                        tw.Write("</tbody>\n");
+                        tw.Write("</table>");
+
+                        tw.Write("</div>"); // id='resultsTableDiv'
+                        tw.Write("</div></div>");
+
+                    end: ;
+                    }
+                    tw.Write("</td></tr>\n");
+                } // if (actionExecute && parametersValid)
+
+                tw.Write("</tbody></table>\n");
             }
-
+            tw.Write("</div>\n"); // id='tab-query'
 
             // Query log tab:
             {
@@ -1534,7 +1529,7 @@ $(function() {
                 errorResponse(403, ex.Message);
                 return;
             }
-            
+
             // Build the SQL command to execute:
             string cmdtext =
 @"BEGIN TRAN
