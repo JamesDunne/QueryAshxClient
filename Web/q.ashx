@@ -13,6 +13,8 @@
 // Enable logging of queries to ~/q.ashx.log
 #define LogQueries
 
+#define JSONP
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +28,14 @@ namespace AdHocQuery
 {
     public class QueryDataServiceProvider : IHttpAsyncHandler
     {
+        public bool IsReusable { get { return true; } }
+
+        public void ProcessRequest(HttpContext ctx)
+        {
+            // Simulate async processing in sync mode.
+            BeginProcessRequest(ctx, new AsyncCallback(EndProcessRequest), null);
+        }
+
         public IAsyncResult BeginProcessRequest(HttpContext context, AsyncCallback cb, object extraData)
         {
             var rar = new RequestAsyncResult()
@@ -43,42 +53,176 @@ namespace AdHocQuery
             return rar;
         }
 
-        public void EndProcessRequest(IAsyncResult result)
+        public void EndProcessRequest(IAsyncResult asyncResult)
         {
-            var rar = (RequestAsyncResult)result;
+            var rar = (RequestAsyncResult)asyncResult;
 
             // Handle final output:
+            var result = rar.Result;
             var rsp = rar.Context.Response;
+            var req = rar.Context.Request;
+
             if (rar.Exception != null)
+                result = formatException(rar.Exception);
+
+            rsp.StatusCode = result.statusCode;
+
+            // JSONP support here:
+#if JSONP
+            string callback = req.QueryString["callback"];
+            if (callback != null)
             {
-                // TODO!!
-                rsp.StatusCode = 500;
-                //rsp.Output.Write();
-                return;
+                // Make sure callback is an identifier:
+                if (!isIdentifier(callback))
+                {
+                    callback = null;
+                    result = new JsonResult(400, "Invalid callback query string parameter");
+                    goto output;
+                }
+
+                // Use javascript content-type and write the callback prefix:
+                rsp.ContentType = "application/javascript";
+                rsp.Write(callback + "(");
             }
-            
-            // TODO!!
+            else
+            {
+#endif
+                // Normal JSON data:
+                rsp.ContentType = "application/json";
+#if JSONP
+            }
+
+        output:
+#endif
+            // Create a JsonTextWriter to write directly to the HTTP response stream:
+            var jrsp = new JsonTextWriter(rsp.Output);
+
+            try
+            {
+                // Serialize the result object directly to the response stream:
+                json.Serialize(jrsp, result);
+            }
+            catch (Exception ex)
+            {
+                json.Serialize(jrsp, formatException(ex));
+            }
+
+#if JSONP
+            // Close the callback expression for JSONP:
+            if (callback != null) rsp.Write(");");
+#endif
         }
 
-        public bool IsReusable { get { return true; } }
-
-        public void ProcessRequest(HttpContext ctx)
+        private static readonly JsonSerializer json = JsonSerializer.Create(new JsonSerializerSettings
         {
-            // Simulate async processing in sync mode.
-            BeginProcessRequest(ctx, new AsyncCallback(EndProcessRequest), null);
+            // NOTE(jsd): Include null values in output for clarity.
+            NullValueHandling = NullValueHandling.Include,
+            ReferenceLoopHandling = ReferenceLoopHandling.Error,
+        });
+
+        private static bool isIdentifier(string value)
+        {
+            if (value == null) return false;
+            if (value.Length == 0) return false;
+
+            if ((value[0] != '_') && !Char.IsLetter(value[0])) return false;
+            foreach (char c in value)
+            {
+                if (!Char.IsLetterOrDigit(c) && (c != '_')) return false;
+            }
+
+            return true;
+        }
+
+        private static JsonResult sqlError(System.Data.SqlClient.SqlException sqex)
+        {
+            int statusCode = 500;
+
+            var errorData = new List<System.Data.SqlClient.SqlError>(sqex.Errors.Count);
+            var msgBuilder = new StringBuilder(sqex.Message.Length);
+            foreach (System.Data.SqlClient.SqlError err in sqex.Errors)
+            {
+                // Skip "The statement has been terminated.":
+                if (err.Number == 3621) continue;
+
+                errorData.Add(err);
+
+                if (msgBuilder.Length > 0)
+                    msgBuilder.AppendFormat("\n{0}", err.Message);
+                else
+                    msgBuilder.Append(err.Message);
+
+                // Determine the HTTP status code to return:
+                switch (sqex.Number)
+                {
+                    // Column does not allow NULLs.
+                    case 515: statusCode = 400; break;
+                    // Violation of UNIQUE KEY constraint '{0}'. Cannot insert duplicate key in object '{1}'.
+                    case 2627: statusCode = 409; break;
+                }
+            }
+
+            string message = msgBuilder.ToString();
+            return new JsonResult(statusCode, message, errorData);
+        }
+
+        private static JsonResult formatException(Exception ex)
+        {
+            JsonException jex;
+            JsonSerializationException jsex;
+            System.Data.SqlClient.SqlException sqex;
+
+            object innerException = null;
+            if (ex.InnerException != null)
+                innerException = (object)formatException(ex.InnerException);
+
+            if ((jex = ex as JsonException) != null)
+            {
+                return new JsonResult(jex.StatusCode, jex.Message);
+            }
+            else if ((jsex = ex as JsonSerializationException) != null)
+            {
+                object errorData = new
+                {
+                    type = ex.GetType().FullName,
+                    message = ex.Message,
+                    stackTrace = ex.StackTrace,
+                    innerException
+                };
+
+                return new JsonResult(500, jsex.Message, new[] { errorData });
+            }
+            else if ((sqex = ex as System.Data.SqlClient.SqlException) != null)
+            {
+                return sqlError(sqex);
+            }
+            else
+            {
+                object errorData = new
+                {
+                    type = ex.GetType().FullName,
+                    message = ex.Message,
+                    stackTrace = ex.StackTrace,
+                    innerException
+                };
+
+                return new JsonResult(500, ex.Message, new[] { errorData });
+            }
         }
     }
 
-    private sealed class RequestAsyncResult : IAsyncResult
+    /// <summary>
+    /// An exception to be converted to a JSON error result.
+    /// </summary>
+    public sealed class JsonException : Exception
     {
-        public object AsyncState { get { return null; } }
-        public System.Threading.WaitHandle AsyncWaitHandle { get { return null; } }
-        public bool CompletedSynchronously { get; set; }
-        public bool IsCompleted { get; set; }
-
-        public HttpContext Context { get; set; }
-        public JsonResult Result { get; set; }
-        public Exception Exception { get; set; }
+        private readonly int _statusCode;
+        public JsonException(int statusCode, string message)
+            : base(message)
+        {
+            _statusCode = statusCode;
+        }
+        public int StatusCode { get { return _statusCode; } }
     }
 
     public sealed class JsonResultMeta
@@ -150,6 +294,18 @@ namespace AdHocQuery
         }
     }
 
+    public sealed class RequestAsyncResult : IAsyncResult
+    {
+        public object AsyncState { get { return null; } }
+        public System.Threading.WaitHandle AsyncWaitHandle { get { return null; } }
+        public bool CompletedSynchronously { get; set; }
+        public bool IsCompleted { get; set; }
+
+        public HttpContext Context { get; set; }
+        public JsonResult Result { get; set; }
+        public Exception Exception { get; set; }
+    }
+
     public sealed class QueryDataAsyncProcessor
     {
         /// <summary>
@@ -181,29 +337,48 @@ namespace AdHocQuery
             this.rsp = ctx.Response;
         }
 
-        private void completedSynchronously(JsonResult r)
+        private bool completedSynchronously(JsonResult r)
         {
             rar.CompletedSynchronously = true;
             rar.IsCompleted = true;
             rar.Result = r;
             cb(rar);
+            return true;
         }
 
-        private void completedSynchronously(Exception ex)
+        private bool completedSynchronously(Exception ex)
         {
             rar.CompletedSynchronously = true;
             rar.IsCompleted = true;
             rar.Exception = ex;
             cb(rar);
+            return true;
         }
 
-        public void Process()
+        private bool completedAsynchronously(JsonResult r)
+        {
+            rar.CompletedSynchronously = false;
+            rar.IsCompleted = true;
+            rar.Result = r;
+            cb(rar);
+            return false;
+        }
+
+        private bool completedAsynchronously(Exception ex)
+        {
+            rar.CompletedSynchronously = false;
+            rar.IsCompleted = true;
+            rar.Exception = ex;
+            cb(rar);
+            return false;
+        }
+
+        public bool Process()
         {
             // Special tool modes:
             if (getFormOrQueryValue("self-update") != null)
             {
-                completedSynchronously(selfUpdate());
-                return;
+                return completedSynchronously(selfUpdate());
             }
 
             try
@@ -220,31 +395,26 @@ namespace AdHocQuery
                     rowLimit = defaultRowLimit;
                 }
 
-                if (String.Equals(getFormOrQueryValue("output"), "json", StringComparison.OrdinalIgnoreCase))
-                {
+                JsonOutput outType;
+                if (String.Equals(getFormOrQueryValue("o"), "objects", StringComparison.OrdinalIgnoreCase))
                     // JSON with each row a dictionary object { "column_name1": "value1", ... }
                     // Each column name must be unique or the JSON will be invalid.
-                    renderJSON(JsonOutput.Dictionary, noQuery, noHeader);
-                }
-                else if (String.Equals(getFormOrQueryValue("output"), "json2", StringComparison.OrdinalIgnoreCase))
-                {
+                    outType = JsonOutput.Dictionary;
+                else if (String.Equals(getFormOrQueryValue("o"), "pairs", StringComparison.OrdinalIgnoreCase))
                     // JSON with each row an array of objects [ { "name": "column_name1", "value": "value1" }, ... ]
                     // Each column name does not have to be unique, but produces objects that are more of a hassle to deal with.
-                    renderJSON(JsonOutput.KeyValuePair, noQuery, noHeader);
-                }
-                else if (String.Equals(getFormOrQueryValue("output"), "json3", StringComparison.OrdinalIgnoreCase))
-                {
+                    outType = JsonOutput.KeyValuePair;
+                else if (String.Equals(getFormOrQueryValue("o"), "arrays", StringComparison.OrdinalIgnoreCase))
                     // JSON with each row an array of values [ value1, value2, value3, ... ]
-                    renderJSON(JsonOutput.Array, noQuery, noHeader);
-                }
+                    outType = JsonOutput.Array;
                 else
-                {
-                }
+                    outType = JsonOutput.Dictionary;
+
+                return renderJSON(outType, noQuery, noHeader);
             }
             catch (Exception ex)
             {
-                completedSynchronously(ex);
-                return;
+                return completedSynchronously(ex);
             }
         }
 
@@ -267,9 +437,7 @@ namespace AdHocQuery
             catch (Exception ex)
             {
                 // Failed retrieving.
-                rsp.StatusCode = 500;
-                rsp.Output.Write("Failed retrieving latest version from github: {0}", ex.Message);
-                return;
+                return new JsonResult(500, String.Format("Failed retrieving latest version from github: {0}", ex.Message));
             }
 
             // Update the current executing ashx file with the new contents:
@@ -282,18 +450,13 @@ namespace AdHocQuery
             catch (Exception ex)
             {
                 // Failed writing.
-                rsp.StatusCode = 500;
-                rsp.Output.Write("Failed writing latest version to '{0}': {1}", updateAppRelPath, ex.Message);
-                return;
+                return new JsonResult(500, String.Format("Failed writing latest version to '{0}': {1}", updateAppRelPath, ex.Message));
             }
 
             newVersion = null;
 
-            // Redirect to the tool:
-            UriBuilder rd = new UriBuilder(req.Url);
-            rd.Query = "msg=Update+successful.";
-            rsp.Redirect(rd.Uri.ToString());
-            return;
+            // Success:
+            return new JsonResult(new { });
         }
 
         private readonly string[] sqlTypes = new string[] { "int", "bit", "varchar", "nvarchar", "char", "nchar", "datetime", "datetime2", "datetimeoffset", "decimal", "money" };
@@ -321,44 +484,6 @@ namespace AdHocQuery
             return parametersValid;
         }
 
-        private static string generateOptionList(string[] options)
-        {
-            return generateOptionList(options, null);
-        }
-
-        private static string generateOptionList(string[] options, string selected)
-        {
-            // Predict enough space to generate the option list:
-            StringBuilder sb = new StringBuilder(options.Sum(opt => "<option></option>".Length + opt.Length) + " selected='selected'".Length);
-            for (int i = 0; i < options.Length; ++i)
-                sb.AppendFormat("<option{1}>{0}</option>",
-                    HttpUtility.HtmlEncode(options[i]),
-                    (options[i] == selected)
-                    ? " selected='selected'"
-                    : String.Empty
-                );
-            return sb.ToString();
-        }
-
-        private static string javascriptStringEncode(string text)
-        {
-            return text.Replace("'", "\\'");
-        }
-
-        private static string toHexString(byte[] bytes)
-        {
-            const string hexChars = "0123456789ABCDEF";
-
-            StringBuilder sbhex = new StringBuilder(2 + 2 * bytes.Length);
-            sbhex.Append("0x");
-            for (int j = 0; j < bytes.Length; ++j)
-            {
-                sbhex.Append(hexChars[bytes[j] >> 4]);
-                sbhex.Append(hexChars[bytes[j] & 0xF]);
-            }
-            return sbhex.ToString();
-        }
-
         private enum JsonOutput
         {
             Dictionary,
@@ -366,15 +491,8 @@ namespace AdHocQuery
             Array
         }
 
-        private void renderJSON(JsonOutput mode, bool noQuery, bool noHeader)
+        private bool renderJSON(JsonOutput mode, bool noQuery, bool noHeader)
         {
-            rsp.StatusCode = 200;
-            rsp.ContentType = "application/json";
-            rsp.ContentEncoding = Encoding.UTF8;
-            //rsp.BufferOutput = false;
-
-            System.IO.TextWriter tw = rsp.Output;
-
             string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
 
             // Pull FORM values:
@@ -389,8 +507,6 @@ namespace AdHocQuery
             having = getFormOrQueryValue("having");
             orderBy = getFormOrQueryValue("orderBy");
 
-            string callback = getFormOrQueryValue("callback");
-
             // Validate and convert parameters:
             ParameterValue[] parameters;
             bool parametersValid = convertParameters(out parameters);
@@ -404,18 +520,13 @@ namespace AdHocQuery
             string errMessage;
             try
             {
-                errMessage = QuerySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
+                errMessage = querySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
             }
             catch (Exception ex)
             {
-                errMessage = ex.Message;
-                query = null;
-                execTimeMsec = 0;
-                rows = null;
-                header = null;
+                return completedSynchronously(ex);
             }
 
-            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
             var final = new Dictionary<string, object>();
 
             if (!noQuery && query != null)
@@ -448,27 +559,13 @@ namespace AdHocQuery
             if (errMessage != null)
             {
                 // TODO: more verbose error reporting
-                final.Add("error", new Dictionary<string, object> { { "message", errMessage } });
-                if (callback != null)
-                {
-                    tw.Write(callback);
-                    tw.Write('(');
-                }
-                tw.Write(jss.Serialize(final));
-                if (callback != null) tw.Write(");");
-                return;
+                return completedSynchronously(new JsonResult(400, errMessage));
             }
 
             final.Add("time", execTimeMsec);
             getJSONDictionary(final, mode, noQuery, noHeader, header, rows);
 
-            if (callback != null)
-            {
-                tw.Write(callback);
-                tw.Write('(');
-            }
-            tw.Write(jss.Serialize(final));
-            if (callback != null) tw.Write(");");
+            return completedSynchronously(new JsonResult(final));
         }
 
         private void getJSONDictionary(Dictionary<string, object> final, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
@@ -538,8 +635,6 @@ namespace AdHocQuery
                         for (int i = 0; rowen.MoveNext(); ++i)
                         {
                             object col = rowen.Current;
-                            // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
-
                             result.Add(new Dictionary<string, object> { { "name", header[i, 0] }, { "value", col } });
                         }
 
@@ -559,8 +654,6 @@ namespace AdHocQuery
                         for (int i = 0; rowen.MoveNext(); ++i)
                         {
                             object col = rowen.Current;
-                            // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
-
                             result.Add(col);
                         }
 
@@ -576,139 +669,6 @@ namespace AdHocQuery
             final.Add("results", results);
         }
 
-        private void errorResponse(int statusCode, string messageFormat, params object[] args)
-        {
-            rsp.Clear();
-            rsp.StatusCode = statusCode;
-            rsp.ContentType = "application/json";
-            var final = new Dictionary<string, object> {
-                { "error", new Dictionary<string, object> {
-                    { "message", String.Format(messageFormat, args) }
-                } }
-            };
-            // Serialize the dictionary to JSON:
-            var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
-            string json = jss.Serialize(final);
-            rsp.Write(json);
-        }
-
-        private bool executeQuery(string connString, string query, out long timeMsec, out string[,] header, out IEnumerable<IEnumerable<object>> results, out Exception error)
-        {
-            // Open a connection and execute the command:
-            var conn = new System.Data.SqlClient.SqlConnection(connString);
-            var cmd = conn.CreateCommand();
-            System.Data.SqlClient.SqlDataReader dr;
-
-            try
-            {
-                conn.Open();
-
-                // Set the TRANSACTION ISOLATION LEVEL to READ UNCOMMITTED so that we don't block any application queries:
-                var tmpcmd = conn.CreateCommand();
-                tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
-                tmpcmd.ExecuteNonQuery();
-
-                // Set the ROWCOUNT so we don't overload the connection with too many results:
-                if (rowLimit > 0)
-                {
-                    tmpcmd.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
-                    tmpcmd.ExecuteNonQuery();
-                }
-
-                cmd.CommandText = query;
-                cmd.CommandType = System.Data.CommandType.Text;
-                cmd.CommandTimeout = 360;   // seconds
-
-                // Open a data reader to read the results:
-                System.Diagnostics.Stopwatch swTimer = System.Diagnostics.Stopwatch.StartNew();
-                dr = cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
-                swTimer.Stop();
-                timeMsec = swTimer.ElapsedMilliseconds;
-            }
-            catch (Exception ex)
-            {
-                conn.Close();
-                cmd.Dispose();
-
-                // Set the exception and failed return:
-                header = null;
-                results = null;
-                timeMsec = -1L;
-                error = ex;
-                return false;
-            }
-
-            // Get the header column names/types:
-            header = getHeader(dr);
-            // Get an enumerator over the results:
-            results = enumerateResults(conn, cmd, dr);
-
-            // Successful return:
-            error = null;
-            return true;
-        }
-
-        #region Logging
-
-        private string LogPath { get { return ctx.Server.MapPath(ctx.Request.AppRelativeCurrentExecutionFilePath + ".log"); } }
-
-        private IEnumerable<string[]> getLogRecords()
-        {
-            var logfi = new System.IO.FileInfo(LogPath);
-            if (!logfi.Exists) yield break;
-
-            string[] lines = System.IO.File.ReadAllLines(LogPath, Encoding.UTF8);
-            foreach (string line in lines)
-            {
-                string[] row = splitTabDelimited(line);
-                if (row.Length != 4) continue;
-
-                yield return row;
-            }
-            yield break;
-        }
-
-        [System.Diagnostics.Conditional("LogQueries")]
-        private void logQuery(string query, string execURL)
-        {
-            string hostName = null;
-            try
-            {
-                hostName = System.Net.Dns.GetHostEntry(ctx.Request.UserHostAddress).HostName;
-
-                // If the hostname is not an IP address, remove the trailing domain names to get just the local machine name:
-                System.Net.IPAddress addr;
-                if (!System.Net.IPAddress.TryParse(hostName, out addr))
-                {
-                    int dotidx = hostName.IndexOf('.');
-                    if (dotidx != -1) hostName = hostName.Remove(dotidx);
-                }
-            }
-            catch (System.Net.Sockets.SocketException) { }
-
-            try
-            {
-                // Log query to a rolling log file:
-                System.IO.File.AppendAllText(
-                    LogPath,
-                    String.Concat(
-                        encodeTabDelimited(DateTimeOffset.Now.ToString()), "\t",
-                        encodeTabDelimited(hostName ?? ctx.Request.UserHostAddress ?? String.Empty), "\t",
-                        encodeTabDelimited(query), "\t",
-                        encodeTabDelimited(execURL),
-                        Environment.NewLine
-                    ),
-                    Encoding.UTF8
-                );
-            }
-            catch
-            {
-                // Not much to do here. Don't really care to warn the user if it fails.
-            }
-        }
-
-        #endregion
-
         private string getFormOrQueryValue(string name)
         {
             return ctx.Request.Form[name] ?? ctx.Request.QueryString[name];
@@ -717,70 +677,6 @@ namespace AdHocQuery
         private string[] getFormOrQueryValues(string name)
         {
             return ctx.Request.Form.GetValues(name) ?? ctx.Request.QueryString.GetValues(name);
-        }
-
-        private static string encodeTabDelimited(string value)
-        {
-            StringBuilder sbResult = new StringBuilder(value.Length * 3 / 2);
-            foreach (char ch in value)
-            {
-                if (ch == '\t') sbResult.Append("\\t");
-                else if (ch == '\n') sbResult.Append("\\n");
-                else if (ch == '\r') sbResult.Append("\\r");
-                else if (ch == '\'') sbResult.Append("\\\'");
-                else if (ch == '\"') sbResult.Append("\\\"");
-                else if (ch == '\\') sbResult.Append("\\\\");
-                else
-                {
-                    sbResult.Append(ch);
-                }
-            }
-            return sbResult.ToString();
-        }
-
-        static string decodeTabDelimited(string value)
-        {
-            int length = value.Length;
-            StringBuilder sbDecoded = new StringBuilder(length);
-            for (int i = 0; i < length; ++i)
-            {
-                char ch = value[i];
-                if (ch == '\\')
-                {
-                    ++i;
-                    if (i >= length)
-                    {
-                        // throw exception?
-                        break;
-                    }
-                    switch (value[i])
-                    {
-                        case 't': sbDecoded.Append('\t'); break;
-                        case 'n': sbDecoded.Append('\n'); break;
-                        case 'r': sbDecoded.Append('\r'); break;
-                        case '\'': sbDecoded.Append('\''); break;
-                        case '\"': sbDecoded.Append('\"'); break;
-                        case '\\': sbDecoded.Append('\\'); break;
-                        default: break;
-                    }
-                }
-                else sbDecoded.Append(ch);
-            }
-            return sbDecoded.ToString();
-        }
-
-        private static string[] splitTabDelimited(string line)
-        {
-            string[] cols = line.Split('\t');
-            int length = cols.Length;
-            string[] result = new string[length];
-            for (int i = 0; i < length; ++i)
-            {
-                // Treat \0 string as null:
-                if (cols[i] == "\0") result[i] = null;
-                else result[i] = decodeTabDelimited(cols[i]);
-            }
-            return result;
         }
 
         private struct ParameterValue
@@ -868,22 +764,22 @@ namespace AdHocQuery
             }
         }
 
-        private string QuerySQL(
-            [QueryParameter("Named connection string")]             string csname,
-            [QueryParameter("Custom connection string")]            string cs,
+        private string querySQL(
+            string csname,
+            string cs,
 
             // CTE is broken out into <identifier> and <expression> parts:
-            [QueryParameter("WITH <identifier> AS (expression)")]   string withCTEidentifier,
-            [QueryParameter("WITH identifier AS (<expression>)")]   string withCTEexpression,
+            string withCTEidentifier,
+            string withCTEexpression,
 
             // SELECT query is broken out into each clause, all are optional except 'select' itself:
-            [QueryParameter("SELECT ...")]                          string select,
+            string select,
             // INTO clause is forbidden
-            [QueryParameter("FROM ...")]                            string from,
-            [QueryParameter("WHERE ...")]                           string where,
-            [QueryParameter("GROUP BY ...")]                        string groupBy,
-            [QueryParameter("HAVING ...")]                          string having,
-            [QueryParameter("ORDER BY ...")]                        string orderBy,
+            string from,
+            string where,
+            string groupBy,
+            string having,
+            string orderBy,
 
             ParameterValue[] parameters,
 
@@ -899,7 +795,11 @@ namespace AdHocQuery
             rows = null;
 
             // Use custom connection string if non-null else use the named one:
-            string connString = cs ?? System.Configuration.ConfigurationManager.ConnectionStrings[csname].ConnectionString;
+            string connString = cs;
+            if (connString == null && csname != null)
+                connString = System.Configuration.ConfigurationManager.ConnectionStrings[csname].ConnectionString;
+            if (connString == null)
+                return "No connection string supplied";
 
             // At minimum, SELECT clause is required:
             if (String.IsNullOrEmpty(select))
@@ -1001,7 +901,9 @@ namespace AdHocQuery
             {
                 cmd.Dispose();
                 conn.Close();
-                return ex.Message;
+
+                // TODO: async callback with exception
+                throw ex;
             }
 
             // Generate the header:
@@ -1308,20 +1210,5 @@ namespace AdHocQuery
             }
             return false;
         }
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
-    public sealed class QueryParameterAttribute : System.Attribute
-    {
-        public QueryParameterAttribute()
-        {
-        }
-
-        public QueryParameterAttribute(string description)
-        {
-            this.Description = description;
-        }
-
-        public string Description { get; private set; }
     }
 }
