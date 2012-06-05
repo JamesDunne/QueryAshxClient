@@ -491,84 +491,93 @@ namespace AdHocQuery
             Array
         }
 
+        private sealed class QueryRequest
+        {
+            public bool noQuery, noHeader;
+            public string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
+            public ParameterValue[] parameters;
+        }
+
         private bool renderJSON(JsonOutput mode, bool noQuery, bool noHeader)
         {
-            string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
-
             // Pull FORM values:
-            csname = getFormOrQueryValue("csname");
-            cs = getFormOrQueryValue("cs");
-            withCTEidentifier = getFormOrQueryValue("wi");
-            withCTEexpression = getFormOrQueryValue("we");
-            select = getFormOrQueryValue("select");
-            from = getFormOrQueryValue("from");
-            where = getFormOrQueryValue("where");
-            groupBy = getFormOrQueryValue("groupBy");
-            having = getFormOrQueryValue("having");
-            orderBy = getFormOrQueryValue("orderBy");
+            var req = new QueryRequest()
+            {
+                noQuery = noQuery,
+                noHeader = noHeader,
+                csname = getFormOrQueryValue("csname"),
+                cs = getFormOrQueryValue("cs"),
+                withCTEidentifier = getFormOrQueryValue("wi"),
+                withCTEexpression = getFormOrQueryValue("we"),
+                select = getFormOrQueryValue("select"),
+                from = getFormOrQueryValue("from"),
+                where = getFormOrQueryValue("where"),
+                groupBy = getFormOrQueryValue("groupBy"),
+                having = getFormOrQueryValue("having"),
+                orderBy = getFormOrQueryValue("orderBy"),
+            };
 
             // Validate and convert parameters:
             ParameterValue[] parameters;
             bool parametersValid = convertParameters(out parameters);
-
-            string query;
-            string[,] header;
-            IEnumerable<IEnumerable<object>> rows;
-            long execTimeMsec;
+            req.parameters = parameters;
 
             // Execute the query:
-            string errMessage;
             try
             {
-                errMessage = querySQL(csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy, parameters, out query, out header, out execTimeMsec, out rows);
+                querySQL(req, completeError, (_1,_2) => completeQuery(_1, _2, mode));
+                return false;
             }
             catch (Exception ex)
             {
                 return completedSynchronously(ex);
             }
+        }
 
+        private void completeError(QueryRequest req, Exception ex)
+        {
+            completedSynchronously(ex);
+        }
+
+        private void completeQuery(QueryRequest req, QueryResult result, JsonOutput mode)
+        {
             var final = new Dictionary<string, object>();
+            var meta = new Dictionary<string, object>();
 
-            if (!noQuery && query != null)
+            if (!req.noQuery && result.query != null)
             {
                 var query_parts = new Dictionary<string, object>();
 
-                if (!String.IsNullOrEmpty(withCTEidentifier))
-                    query_parts.Add("with_cte_identifier", withCTEidentifier);
-                if (!String.IsNullOrEmpty(withCTEexpression))
-                    query_parts.Add("with_cte_expression", withCTEexpression);
-                query_parts.Add("select", select);
-                if (!String.IsNullOrEmpty(from))
-                    query_parts.Add("from", from);
-                if (!String.IsNullOrEmpty(where))
-                    query_parts.Add("where", where);
-                if (!String.IsNullOrEmpty(groupBy))
-                    query_parts.Add("groupBy", groupBy);
-                if (!String.IsNullOrEmpty(having))
-                    query_parts.Add("having", having);
-                if (!String.IsNullOrEmpty(orderBy))
-                    query_parts.Add("orderBy", orderBy);
-                final.Add("query_parts", query_parts);
+                if (!String.IsNullOrEmpty(req.withCTEidentifier))
+                    query_parts.Add("with_cte_identifier", req.withCTEidentifier);
+                if (!String.IsNullOrEmpty(req.withCTEexpression))
+                    query_parts.Add("with_cte_expression", req.withCTEexpression);
+                query_parts.Add("select", req.select);
+                if (!String.IsNullOrEmpty(req.from))
+                    query_parts.Add("from", req.from);
+                if (!String.IsNullOrEmpty(req.where))
+                    query_parts.Add("where", req.where);
+                if (!String.IsNullOrEmpty(req.groupBy))
+                    query_parts.Add("groupBy", req.groupBy);
+                if (!String.IsNullOrEmpty(req.having))
+                    query_parts.Add("having", req.having);
+                if (!String.IsNullOrEmpty(req.orderBy))
+                    query_parts.Add("orderBy", req.orderBy);
+                meta.Add("queryParts", query_parts);
 
-                final.Add("query", query);
+                meta.Add("query", result.query);
 
                 // FIXME? value is always a raw string value. This is good for decimal/money types, maybe not so great for everything else.
-                final.Add("parameters", parameters.Select(prm => new { name = prm.Name, type = prm.RawType, value = prm.RawValue }).ToArray());
+                meta.Add("parameters", req.parameters.Select(prm => new { name = prm.Name, type = prm.RawType, value = prm.RawValue }).ToArray());
             }
 
-            if (errMessage != null)
-            {
-                // TODO: more verbose error reporting
-                return completedSynchronously(new JsonResult(400, errMessage));
-            }
+            meta.Add("time", result.execTimeMsec);
+            object results = getJSONDictionary(meta, mode, req.noQuery, req.noHeader, result.header, result.rows);
 
-            final.Add("time", execTimeMsec);
-            getJSONDictionary(final, mode, noQuery, noHeader, header, rows);
-
-            return completedSynchronously(new JsonResult(final));
+            completedSynchronously(new JsonResult(results, meta));
         }
 
-        private void getJSONDictionary(Dictionary<string, object> final, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
+        private object getJSONDictionary(Dictionary<string, object> meta, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
         {
             // Convert the header string[,] to { name, type }[]:
             List<object> headers = new List<object>(header.GetUpperBound(0) + 1);
@@ -597,11 +606,10 @@ namespace AdHocQuery
 
             if (!noHeader)
             {
-                final.Add("header", headers);
+                meta.Add("header", headers);
             }
 
             // Convert each result row:
-            object results;
             if (mode == JsonOutput.Dictionary)
             {
                 var list = new List<Dictionary<string, object>>();
@@ -621,7 +629,7 @@ namespace AdHocQuery
 
                     list.Add(result);
                 }
-                results = list;
+                return list;
             }
             else if (mode == JsonOutput.KeyValuePair)
             {
@@ -640,7 +648,7 @@ namespace AdHocQuery
 
                     list.Add(result);
                 }
-                results = list;
+                return list;
             }
             else if (mode == JsonOutput.Array)
             {
@@ -659,14 +667,12 @@ namespace AdHocQuery
 
                     list.Add(result);
                 }
-                results = list;
+                return list;
             }
             else
             {
-                results = "Unknown JSON mode!";
+                throw new JsonException(400, "Unknown JSON mode!");
             }
-
-            final.Add("results", results);
         }
 
         private string getFormOrQueryValue(string name)
@@ -763,59 +769,42 @@ namespace AdHocQuery
                 }
             }
         }
-
-        private string querySQL(
-            string csname,
-            string cs,
-
-            // CTE is broken out into <identifier> and <expression> parts:
-            string withCTEidentifier,
-            string withCTEexpression,
-
-            // SELECT query is broken out into each clause, all are optional except 'select' itself:
-            string select,
-            // INTO clause is forbidden
-            string from,
-            string where,
-            string groupBy,
-            string having,
-            string orderBy,
-
-            ParameterValue[] parameters,
-
-            out string query,
-            out string[,] header,
-            out long execTimeMsec,
-            out IEnumerable<IEnumerable<object>> rows
-        )
+        
+        private sealed class QueryResult
         {
-            query = null;
-            header = null;
-            execTimeMsec = 0;
-            rows = null;
+            public string query;
+            public string[,] header;
+            public long execTimeMsec;
+            public IEnumerable<IEnumerable<object>> rows;
+        }
 
+        private delegate void errorDelegate(QueryRequest req, Exception ex);
+        private delegate void successDelegate(QueryRequest req, QueryResult result);
+
+        private void querySQL(QueryRequest req, errorDelegate err, successDelegate success)
+        {
             // Use custom connection string if non-null else use the named one:
-            string connString = cs;
-            if (connString == null && csname != null)
-                connString = System.Configuration.ConfigurationManager.ConnectionStrings[csname].ConnectionString;
+            string connString = req.cs;
+            if (connString == null && req.csname != null)
+                connString = System.Configuration.ConfigurationManager.ConnectionStrings[req.csname].ConnectionString;
             if (connString == null)
-                return "No connection string supplied";
+                throw new ArgumentException("No connection string supplied");
 
             // At minimum, SELECT clause is required:
-            if (String.IsNullOrEmpty(select))
+            if (String.IsNullOrEmpty(req.select))
             {
-                return "SELECT is required";
+                throw new ArgumentException("SELECT is required");
             }
 
             // Strip out all SQL comments:
-            withCTEidentifier = stripSQLComments(withCTEidentifier);
-            withCTEexpression = stripSQLComments(withCTEexpression);
-            select = stripSQLComments(select);
-            from = stripSQLComments(from);
-            where = stripSQLComments(where);
-            groupBy = stripSQLComments(groupBy);
-            having = stripSQLComments(having);
-            orderBy = stripSQLComments(orderBy);
+            string withCTEidentifier = stripSQLComments(req.withCTEidentifier);
+            string withCTEexpression = stripSQLComments(req.withCTEexpression);
+            string select = stripSQLComments(req.select);
+            string from = stripSQLComments(req.from);
+            string where = stripSQLComments(req.where);
+            string groupBy = stripSQLComments(req.groupBy);
+            string having = stripSQLComments(req.having);
+            string orderBy = stripSQLComments(req.orderBy);
 
             // Allocate a StringBuilder with enough space to construct the query:
             StringBuilder qb = new StringBuilder(
@@ -839,21 +828,21 @@ namespace AdHocQuery
             if (!String.IsNullOrEmpty(orderBy)) qb.AppendFormat("\r\nORDER BY {0}", orderBy);
 
             // Finalize the query:
-            query = qb.ToString();
+            string query = qb.ToString();
 
             // This is a very conservative approach and will lead to false-positives for things like EXISTS() and sub-queries:
             if (containsSQLkeywords(select, "from", "into", "where", "group", "having", "order", "for"))
-                return "SELECT clause cannot contain FROM, INTO, WHERE, GROUP BY, HAVING, ORDER BY, or FOR";
+                throw new ArgumentException("SELECT clause cannot contain FROM, INTO, WHERE, GROUP BY, HAVING, ORDER BY, or FOR");
             if (containsSQLkeywords(from, "where", "group", "having", "order", "for"))
-                return "FROM clause cannot contain WHERE, GROUP BY, HAVING, ORDER BY, or FOR";
+                throw new ArgumentException("FROM clause cannot contain WHERE, GROUP BY, HAVING, ORDER BY, or FOR");
             if (containsSQLkeywords(where, "group", "having", "order", "for"))
-                return "WHERE clause cannot contain GROUP BY, HAVING, ORDER BY, or FOR";
+                throw new ArgumentException("WHERE clause cannot contain GROUP BY, HAVING, ORDER BY, or FOR");
             if (containsSQLkeywords(groupBy, "having", "order", "for"))
-                return "GROUP BY clause cannot contain HAVING, ORDER BY, or FOR";
+                throw new ArgumentException("GROUP BY clause cannot contain HAVING, ORDER BY, or FOR");
             if (containsSQLkeywords(having, "order", "for"))
-                return "HAVING clause cannot contain ORDER BY or FOR";
+                throw new ArgumentException("HAVING clause cannot contain ORDER BY or FOR");
             if (containsSQLkeywords(orderBy, "for"))
-                return "ORDER BY clause cannot contain FOR";
+                throw new ArgumentException("ORDER BY clause cannot contain FOR");
 
             // Open a connection and execute the command:
             var conn = new System.Data.SqlClient.SqlConnection(connString);
@@ -864,13 +853,14 @@ namespace AdHocQuery
             cmd.CommandTimeout = 360;   // seconds
 
             // Add parameters:
-            for (int i = 0; i < parameters.Length; ++i)
+            for (int i = 0; i < req.parameters.Length; ++i)
             {
-                if (!parameters[i].IsValid) return String.Format("Parameter '{0}' is invalid: {1}", parameters[i].Name, parameters[i].ValidationMessage);
-                cmd.Parameters.Add(parameters[i].Name, parameters[i].Type).SqlValue = parameters[i].SqlValue;
+                if (!req.parameters[i].IsValid) throw new ArgumentException(String.Format("Parameter '{0}' is invalid: {1}", req.parameters[i].Name, req.parameters[i].ValidationMessage));
+                cmd.Parameters.Add(req.parameters[i].Name, req.parameters[i].Type).SqlValue = req.parameters[i].SqlValue;
             }
 
             System.Data.SqlClient.SqlDataReader dr;
+            long execTimeMsec;
 
             try
             {
@@ -893,8 +883,6 @@ namespace AdHocQuery
                 System.Diagnostics.Stopwatch swTimer = System.Diagnostics.Stopwatch.StartNew();
                 dr = cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
                 swTimer.Stop();
-
-                // Record the execution time:
                 execTimeMsec = swTimer.ElapsedMilliseconds;
             }
             catch (Exception ex)
@@ -902,17 +890,20 @@ namespace AdHocQuery
                 cmd.Dispose();
                 conn.Close();
 
-                // TODO: async callback with exception
-                throw ex;
+                err(req, ex);
+                return;
             }
 
+            var result = new QueryResult();
+            result.query = query;
+            result.execTimeMsec = execTimeMsec;
             // Generate the header:
-            header = getHeader(dr);
+            result.header = getHeader(dr);
             // Create an enumerator over the results in sequential access order:
-            rows = enumerateResults(conn, cmd, dr);
+            result.rows = enumerateResults(conn, cmd, dr);
 
-            // No errors:
-            return null;
+            success(req, result);
+            return;
         }
 
         private static string[,] getHeader(System.Data.SqlClient.SqlDataReader dr)
