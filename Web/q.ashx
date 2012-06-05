@@ -525,7 +525,7 @@ namespace AdHocQuery
             // Execute the query:
             try
             {
-                querySQL(req, completeError, (_1,_2) => completeQuery(_1, _2, mode));
+                querySQL(req, completeError, (_1, _2) => completeQuery(_1, _2, mode));
                 return false;
             }
             catch (Exception ex)
@@ -574,7 +574,7 @@ namespace AdHocQuery
             meta.Add("time", result.execTimeMsec);
             object results = getJSONDictionary(meta, mode, req.noQuery, req.noHeader, result.header, result.rows);
 
-            completedSynchronously(new JsonResult(results, meta));
+            completedAsynchronously(new JsonResult(results, meta));
         }
 
         private object getJSONDictionary(Dictionary<string, object> meta, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
@@ -769,7 +769,7 @@ namespace AdHocQuery
                 }
             }
         }
-        
+
         private sealed class QueryResult
         {
             public string query;
@@ -789,6 +789,12 @@ namespace AdHocQuery
                 connString = System.Configuration.ConfigurationManager.ConnectionStrings[req.csname].ConnectionString;
             if (connString == null)
                 throw new ArgumentException("No connection string supplied");
+
+            // Enable async processing:
+            var csb = new System.Data.SqlClient.SqlConnectionStringBuilder(connString);
+            csb.AsynchronousProcessing = true;
+            csb.ConnectTimeout = 5;
+            connString = csb.ToString();
 
             // At minimum, SELECT clause is required:
             if (String.IsNullOrEmpty(req.select))
@@ -859,31 +865,10 @@ namespace AdHocQuery
                 cmd.Parameters.Add(req.parameters[i].Name, req.parameters[i].Type).SqlValue = req.parameters[i].SqlValue;
             }
 
-            System.Data.SqlClient.SqlDataReader dr;
-            long execTimeMsec;
-
             try
             {
                 // Open the connection:
                 conn.Open();
-
-                // Set the TRANSACTION ISOLATION LEVEL to READ UNCOMMITTED so that we don't block any application queries:
-                var tmpcmd = conn.CreateCommand();
-                tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
-                tmpcmd.ExecuteNonQuery();
-
-                // Set the ROWCOUNT so we don't overload the connection with too many results:
-                if (rowLimit > 0)
-                {
-                    tmpcmd.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
-                    tmpcmd.ExecuteNonQuery();
-                }
-
-                // Time the execution and grab the SqlDataReader:
-                System.Diagnostics.Stopwatch swTimer = System.Diagnostics.Stopwatch.StartNew();
-                dr = cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
-                swTimer.Stop();
-                execTimeMsec = swTimer.ElapsedMilliseconds;
             }
             catch (Exception ex)
             {
@@ -894,15 +879,121 @@ namespace AdHocQuery
                 return;
             }
 
-            var result = new QueryResult();
-            result.query = query;
-            result.execTimeMsec = execTimeMsec;
-            // Generate the header:
-            result.header = getHeader(dr);
-            // Create an enumerator over the results in sequential access order:
-            result.rows = enumerateResults(conn, cmd, dr);
+            try
+            {
+                // Set the TRANSACTION ISOLATION LEVEL to READ UNCOMMITTED so that we don't block any application queries:
+                var tmpcmd = conn.CreateCommand();
+                tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
+                tmpcmd.BeginExecuteNonQuery((iar) =>
+                {
+                    try
+                    {
+                        ((System.Data.SqlClient.SqlCommand)iar.AsyncState).EndExecuteNonQuery(iar);
+                    }
+                    catch (Exception ex)
+                    {
+                        cmd.Dispose();
+                        conn.Close();
 
-            success(req, result);
+                        err(req, ex);
+                        return;
+                    }
+
+                    System.Diagnostics.Stopwatch swTimer = null;
+                    AsyncCallback queryComplete = delegate(IAsyncResult iarq)
+                    {
+                        System.Data.SqlClient.SqlDataReader dr;
+                        try
+                        {
+                            dr = ((System.Data.SqlClient.SqlCommand)iarq.AsyncState).EndExecuteReader(iarq);
+                            if (swTimer != null) swTimer.Stop();
+                        }
+                        catch (Exception ex)
+                        {
+                            cmd.Dispose();
+                            conn.Close();
+
+                            if (swTimer != null) swTimer.Stop();
+                            err(req, ex);
+                            return;
+                        }
+
+                        var result = new QueryResult();
+                        result.query = query;
+                        result.execTimeMsec = swTimer.ElapsedMilliseconds;
+                        // Generate the header:
+                        result.header = getHeader(dr);
+                        // Create an enumerator over the results in sequential access order:
+                        result.rows = enumerateResults(conn, cmd, dr);
+
+                        success(req, result);
+                        return;
+                    };
+
+                    // Set the ROWCOUNT so we don't overload the connection with too many results:
+                    if (rowLimit > 0)
+                    {
+                        var tmpcmd2 = conn.CreateCommand();
+                        tmpcmd2.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
+                        tmpcmd2.BeginExecuteNonQuery((iar2) =>
+                        {
+                            try
+                            {
+                                ((System.Data.SqlClient.SqlCommand)iar2.AsyncState).EndExecuteNonQuery(iar2);
+                            }
+                            catch (Exception ex)
+                            {
+                                cmd.Dispose();
+                                conn.Close();
+
+                                err(req, ex);
+                                return;
+                            }
+
+                            try
+                            {
+                                // Start the query:
+                                swTimer = System.Diagnostics.Stopwatch.StartNew();
+                                cmd.BeginExecuteReader(queryComplete, cmd, System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
+                            }
+                            catch (Exception ex)
+                            {
+                                cmd.Dispose();
+                                conn.Close();
+
+                                err(req, ex);
+                                return;
+                            }
+                        }, tmpcmd2);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            // Start the query:
+                            swTimer = System.Diagnostics.Stopwatch.StartNew();
+                            cmd.BeginExecuteReader(queryComplete, cmd, System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
+                        }
+                        catch (Exception ex)
+                        {
+                            cmd.Dispose();
+                            conn.Close();
+
+                            err(req, ex);
+                            return;
+                        }
+                    }
+                }, tmpcmd);
+            }
+            catch (Exception ex)
+            {
+                cmd.Dispose();
+                conn.Close();
+
+                err(req, ex);
+                return;
+            }
+
             return;
         }
 
