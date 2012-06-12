@@ -8,11 +8,12 @@
 // Designed and implemented by James S. Dunne (github.com/JamesDunne)
 // on 2012-06-04
 
+// Executes SQL queries asynchronously, hence does not tie up ASP.NET threads waiting for query execution.
+// Once query is executed, results are fetched synchronously and serialized to the response in JSON.
+
 // TODO: add optional TOP(N) clause
 
-// Enable logging of queries to ~/q.ashx.log
-#define LogQueries
-
+// Support JSONP via 'callback' query-string parameter:
 #define JSONP
 
 using System;
@@ -33,15 +34,19 @@ namespace AdHocQuery
         public void ProcessRequest(HttpContext ctx)
         {
             // Simulate async processing in sync mode.
-            BeginProcessRequest(ctx, new AsyncCallback(EndProcessRequest), null);
+            BeginProcessRequest(ctx, new AsyncCallback(EndProcessRequest), (object)true);
         }
 
         public IAsyncResult BeginProcessRequest(HttpContext context, AsyncCallback cb, object extraData)
         {
+            bool isSynchronous = false;
+            if (extraData is bool) isSynchronous = (bool)extraData;
+
             var rar = new RequestAsyncResult()
             {
                 Context = context,
-                CompletedSynchronously = false,
+                // Flag whether or not the request was made asynchronously:
+                CompletedSynchronously = isSynchronous,
                 IsCompleted = false
             };
 
@@ -225,16 +230,6 @@ namespace AdHocQuery
         public int StatusCode { get { return _statusCode; } }
     }
 
-    public sealed class JsonResultMeta
-    {
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public bool? committed;
-        public long execMsec;
-        public DateTimeOffset executed;
-        public string server;
-        public string database;
-    }
-
     public struct JsonResult
     {
         [JsonIgnore]
@@ -337,36 +332,16 @@ namespace AdHocQuery
             this.rsp = ctx.Response;
         }
 
-        private bool completedSynchronously(JsonResult r)
+        private bool completed(JsonResult r)
         {
-            rar.CompletedSynchronously = true;
-            rar.IsCompleted = true;
-            rar.Result = r;
-            cb(rar);
-            return true;
-        }
-
-        private bool completedSynchronously(Exception ex)
-        {
-            rar.CompletedSynchronously = true;
-            rar.IsCompleted = true;
-            rar.Exception = ex;
-            cb(rar);
-            return true;
-        }
-
-        private bool completedAsynchronously(JsonResult r)
-        {
-            rar.CompletedSynchronously = false;
             rar.IsCompleted = true;
             rar.Result = r;
             cb(rar);
             return false;
         }
 
-        private bool completedAsynchronously(Exception ex)
+        private bool completed(Exception ex)
         {
-            rar.CompletedSynchronously = false;
             rar.IsCompleted = true;
             rar.Exception = ex;
             cb(rar);
@@ -378,7 +353,7 @@ namespace AdHocQuery
             // Special tool modes:
             if (getFormOrQueryValue("self-update") != null)
             {
-                return completedSynchronously(selfUpdate());
+                return completed(selfUpdate());
             }
 
             try
@@ -414,7 +389,7 @@ namespace AdHocQuery
             }
             catch (Exception ex)
             {
-                return completedSynchronously(ex);
+                return completed(ex);
             }
         }
 
@@ -494,7 +469,8 @@ namespace AdHocQuery
         private sealed class QueryRequest
         {
             public bool noQuery, noHeader;
-            public string csname, cs, withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
+            public string connString;
+            public string withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
             public ParameterValue[] parameters;
         }
 
@@ -505,8 +481,6 @@ namespace AdHocQuery
             {
                 noQuery = noQuery,
                 noHeader = noHeader,
-                csname = getFormOrQueryValue("csname"),
-                cs = getFormOrQueryValue("cs"),
                 withCTEidentifier = getFormOrQueryValue("wi"),
                 withCTEexpression = getFormOrQueryValue("we"),
                 select = getFormOrQueryValue("select"),
@@ -516,6 +490,38 @@ namespace AdHocQuery
                 having = getFormOrQueryValue("having"),
                 orderBy = getFormOrQueryValue("orderBy"),
             };
+
+            // Patch together a connection string:
+            System.Data.SqlClient.SqlConnectionStringBuilder csb = new System.Data.SqlClient.SqlConnectionStringBuilder();
+
+            csb.DataSource = getFormOrQueryValue("ds") ?? String.Empty;
+            csb.InitialCatalog = getFormOrQueryValue("ic") ?? String.Empty;
+
+            string uid = getFormOrQueryValue("uid");
+            string pwd = getFormOrQueryValue("pwd");
+            if (uid != null && pwd != null)
+            {
+                csb.IntegratedSecurity = false;
+                csb.UserID = uid;
+                csb.Password = pwd;
+            }
+            else
+            {
+                csb.IntegratedSecurity = true;
+            }
+
+            // Enable async processing:
+            csb.AsynchronousProcessing = true;
+            // Max 5-second connection timeout:
+            csb.ConnectTimeout = 5;
+            // Some defaults:
+            csb.ApplicationName = "q.ashx";
+            // TODO(jsd): Tune this parameter
+            csb.PacketSize = 32768;
+            csb.WorkstationID = ctx.Request.UserHostName;
+
+            // Finalize the connection string:
+            req.connString = csb.ToString();
 
             // Validate and convert parameters:
             ParameterValue[] parameters;
@@ -530,19 +536,20 @@ namespace AdHocQuery
             }
             catch (Exception ex)
             {
-                return completedSynchronously(ex);
+                return completed(ex);
             }
         }
 
         private void completeError(QueryRequest req, Exception ex)
         {
-            completedSynchronously(ex);
+            completed(ex);
         }
 
         private void completeQuery(QueryRequest req, QueryResult result, JsonOutput mode)
         {
             var final = new Dictionary<string, object>();
             var meta = new Dictionary<string, object>();
+            meta.Add("time", result.execTimeMsec);
 
             if (!req.noQuery && result.query != null)
             {
@@ -571,10 +578,9 @@ namespace AdHocQuery
                 meta.Add("parameters", req.parameters.Select(prm => new { name = prm.Name, type = prm.RawType, value = prm.RawValue }).ToArray());
             }
 
-            meta.Add("time", result.execTimeMsec);
             object results = getJSONDictionary(meta, mode, req.noQuery, req.noHeader, result.header, result.rows);
 
-            completedAsynchronously(new JsonResult(results, meta));
+            completed(new JsonResult(results, meta));
         }
 
         private object getJSONDictionary(Dictionary<string, object> meta, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
@@ -783,19 +789,6 @@ namespace AdHocQuery
 
         private void querySQL(QueryRequest req, errorDelegate err, successDelegate success)
         {
-            // Use custom connection string if non-null else use the named one:
-            string connString = req.cs;
-            if (connString == null && req.csname != null)
-                connString = System.Configuration.ConfigurationManager.ConnectionStrings[req.csname].ConnectionString;
-            if (connString == null)
-                throw new ArgumentException("No connection string supplied");
-
-            // Enable async processing:
-            var csb = new System.Data.SqlClient.SqlConnectionStringBuilder(connString);
-            csb.AsynchronousProcessing = true;
-            csb.ConnectTimeout = 5;
-            connString = csb.ToString();
-
             // At minimum, SELECT clause is required:
             if (String.IsNullOrEmpty(req.select))
             {
@@ -851,10 +844,14 @@ namespace AdHocQuery
                 throw new ArgumentException("ORDER BY clause cannot contain FOR");
 
             // Open a connection and execute the command:
-            var conn = new System.Data.SqlClient.SqlConnection(connString);
+            var conn = new System.Data.SqlClient.SqlConnection(req.connString);
             var cmd = conn.CreateCommand();
 
-            cmd.CommandText = query;
+            // Set TRANSACTION ISOLATION LEVEL and optionally ROWCOUNT before the query:
+            cmd.CommandText = @"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;" + Environment.NewLine;
+            if (rowLimit > 0)
+                cmd.CommandText += String.Format("SET ROWCOUNT {0};", rowLimit) + Environment.NewLine;
+            cmd.CommandText += query;
             cmd.CommandType = System.Data.CommandType.Text;
             cmd.CommandTimeout = 360;   // seconds
 
@@ -879,111 +876,42 @@ namespace AdHocQuery
                 return;
             }
 
+            System.Diagnostics.Stopwatch swTimer = null;
+            AsyncCallback queryComplete = delegate(IAsyncResult iarq)
+            {
+                System.Data.SqlClient.SqlDataReader dr;
+                try
+                {
+                    dr = ((System.Data.SqlClient.SqlCommand)iarq.AsyncState).EndExecuteReader(iarq);
+                    if (swTimer != null) swTimer.Stop();
+                }
+                catch (Exception ex)
+                {
+                    cmd.Dispose();
+                    conn.Close();
+
+                    if (swTimer != null) swTimer.Stop();
+                    err(req, ex);
+                    return;
+                }
+
+                var result = new QueryResult();
+                result.query = query;
+                result.execTimeMsec = swTimer.ElapsedMilliseconds;
+                // Generate the header:
+                result.header = getHeader(dr);
+                // Create an enumerator over the results in sequential access order:
+                result.rows = enumerateResults(conn, cmd, dr);
+
+                success(req, result);
+                return;
+            };
+
             try
             {
-                // Set the TRANSACTION ISOLATION LEVEL to READ UNCOMMITTED so that we don't block any application queries:
-                var tmpcmd = conn.CreateCommand();
-                tmpcmd.CommandText = "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
-                tmpcmd.BeginExecuteNonQuery((iar) =>
-                {
-                    try
-                    {
-                        ((System.Data.SqlClient.SqlCommand)iar.AsyncState).EndExecuteNonQuery(iar);
-                    }
-                    catch (Exception ex)
-                    {
-                        cmd.Dispose();
-                        conn.Close();
-
-                        err(req, ex);
-                        return;
-                    }
-
-                    System.Diagnostics.Stopwatch swTimer = null;
-                    AsyncCallback queryComplete = delegate(IAsyncResult iarq)
-                    {
-                        System.Data.SqlClient.SqlDataReader dr;
-                        try
-                        {
-                            dr = ((System.Data.SqlClient.SqlCommand)iarq.AsyncState).EndExecuteReader(iarq);
-                            if (swTimer != null) swTimer.Stop();
-                        }
-                        catch (Exception ex)
-                        {
-                            cmd.Dispose();
-                            conn.Close();
-
-                            if (swTimer != null) swTimer.Stop();
-                            err(req, ex);
-                            return;
-                        }
-
-                        var result = new QueryResult();
-                        result.query = query;
-                        result.execTimeMsec = swTimer.ElapsedMilliseconds;
-                        // Generate the header:
-                        result.header = getHeader(dr);
-                        // Create an enumerator over the results in sequential access order:
-                        result.rows = enumerateResults(conn, cmd, dr);
-
-                        success(req, result);
-                        return;
-                    };
-
-                    // Set the ROWCOUNT so we don't overload the connection with too many results:
-                    if (rowLimit > 0)
-                    {
-                        var tmpcmd2 = conn.CreateCommand();
-                        tmpcmd2.CommandText = String.Format("SET ROWCOUNT {0};", rowLimit);
-                        tmpcmd2.BeginExecuteNonQuery((iar2) =>
-                        {
-                            try
-                            {
-                                ((System.Data.SqlClient.SqlCommand)iar2.AsyncState).EndExecuteNonQuery(iar2);
-                            }
-                            catch (Exception ex)
-                            {
-                                cmd.Dispose();
-                                conn.Close();
-
-                                err(req, ex);
-                                return;
-                            }
-
-                            try
-                            {
-                                // Start the query:
-                                swTimer = System.Diagnostics.Stopwatch.StartNew();
-                                cmd.BeginExecuteReader(queryComplete, cmd, System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
-                            }
-                            catch (Exception ex)
-                            {
-                                cmd.Dispose();
-                                conn.Close();
-
-                                err(req, ex);
-                                return;
-                            }
-                        }, tmpcmd2);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            // Start the query:
-                            swTimer = System.Diagnostics.Stopwatch.StartNew();
-                            cmd.BeginExecuteReader(queryComplete, cmd, System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
-                        }
-                        catch (Exception ex)
-                        {
-                            cmd.Dispose();
-                            conn.Close();
-
-                            err(req, ex);
-                            return;
-                        }
-                    }
-                }, tmpcmd);
+                // Start the query:
+                swTimer = System.Diagnostics.Stopwatch.StartNew();
+                cmd.BeginExecuteReader(queryComplete, cmd, System.Data.CommandBehavior.CloseConnection | System.Data.CommandBehavior.SequentialAccess);
             }
             catch (Exception ex)
             {
