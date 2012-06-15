@@ -1,0 +1,15 @@
+{
+    "name": "Interactive query prompt",
+    "minimum_chrome_version": "18",
+    "manifest_version": 2,
+    /*"content_security_policy": "script-src 'self'; object-src 'self'",*/
+    "version": "1.0",
+    "description": "An interactive console query prompt",
+    "offline_enabled": true,
+    "permissions": [ "http://*/", "https://*/" ],
+    "app": {
+        "launch": {
+            "local_path": "main.html"
+        }
+    }
+}
