@@ -2,6 +2,7 @@
 <html>
 <head>
     <script type="text/javascript" src="scripts/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="scripts/knockout-2.0.0.js"></script>
     <script type="text/javascript" src="scripts/gettheme.js"></script>
     <script type="text/javascript" src="jqwidgets/jqxcore.js"></script>
     <script type="text/javascript" src="jqwidgets/jqxbuttons.js"></script>
@@ -9,6 +10,8 @@
     <script type="text/javascript" src="jqwidgets/jqxpanel.js"></script>
     <script type="text/javascript" src="jqwidgets/jqxscrollbar.js"></script>
     <script type="text/javascript" src="jqwidgets/jqxtree.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxlistbox.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxcombobox.js"></script>
 
     <link rel="stylesheet" href="jqwidgets/styles/jqx.base.css" type="text/css" />
     <link rel="stylesheet" href="jqwidgets/styles/jqx.energyblue.css" type="text/css" />
@@ -36,6 +39,18 @@ html, body
             <div class="splitter-panel">
                 Query Editor
                 <div id="queryEditor">
+                    <table border="0" style="width: 100%"><tbody>
+                        <tr>
+                            <td>From</td>
+                            <td style="width: 90%"><table border="0" style="width: 100%; height: 2em"><tbody>
+                                <tr>
+                                    <td style="width: 33%"><div id="cbxDatabase0" class="cbxDatabase" /></td>
+                                    <td style="width: 33%"><div id="cbxSchema0" class="cbxSchema" /></td>
+                                    <td style="width: 33%"><div id="cbxTable0" class="cbxTable" /></td>
+                                </tr>
+                            </tbody></table></td>
+                        </tr>
+                    </tbody></table>
                 </div>
             </div>
             <div class="splitter-panel">
