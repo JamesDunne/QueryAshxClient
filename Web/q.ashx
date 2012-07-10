@@ -360,8 +360,10 @@ namespace AdHocQuery
             {
                 bool noHeader = false;
                 bool noQuery = false;
-                if (getFormOrQueryValue("no_header") != null) noHeader = true;
-                if (getFormOrQueryValue("no_query") != null) noQuery = true;
+                bool noMeta = false;
+                if (getFormOrQueryValue("noHeader") != null) noHeader = true;
+                if (getFormOrQueryValue("noQuery") != null) noQuery = true;
+                if (getFormOrQueryValue("noMeta") != null) noMeta = true;
 
                 string rowlimitStr = getFormOrQueryValue("rowlimit");
                 if ((rowlimitStr != null) && !Int32.TryParse(rowlimitStr, out rowLimit))
@@ -382,10 +384,12 @@ namespace AdHocQuery
                 else if (String.Equals(getFormOrQueryValue("o"), "arrays", StringComparison.OrdinalIgnoreCase))
                     // JSON with each row an array of values [ value1, value2, value3, ... ]
                     outType = JsonOutput.Array;
+                else if (String.Equals(getFormOrQueryValue("o"), "inflated", StringComparison.OrdinalIgnoreCase))
+                    outType = JsonOutput.Inflated;
                 else
                     outType = JsonOutput.Dictionary;
 
-                return renderJSON(outType, noQuery, noHeader);
+                return renderJSON(outType, noQuery, noHeader, noMeta);
             }
             catch (Exception ex)
             {
@@ -462,25 +466,27 @@ namespace AdHocQuery
         private enum JsonOutput
         {
             Dictionary,
+            Inflated,
             KeyValuePair,
             Array
         }
 
         private sealed class QueryRequest
         {
-            public bool noQuery, noHeader;
+            public bool noQuery, noHeader, noMeta;
             public string connString;
             public string withCTEidentifier, withCTEexpression, select, from, where, groupBy, having, orderBy;
             public ParameterValue[] parameters;
         }
 
-        private bool renderJSON(JsonOutput mode, bool noQuery, bool noHeader)
+        private bool renderJSON(JsonOutput mode, bool noQuery, bool noHeader, bool noMeta)
         {
             // Pull FORM values:
             var req = new QueryRequest()
             {
                 noQuery = noQuery,
                 noHeader = noHeader,
+                noMeta = noMeta,
                 withCTEidentifier = getFormOrQueryValue("wi"),
                 withCTEexpression = getFormOrQueryValue("we"),
                 select = getFormOrQueryValue("select"),
@@ -547,46 +553,138 @@ namespace AdHocQuery
 
         private void completeQuery(QueryRequest req, QueryResult result, JsonOutput mode)
         {
-            var final = new Dictionary<string, object>();
-            var meta = new Dictionary<string, object>();
-            meta.Add("time", result.execTimeMsec);
-
-            if (!req.noQuery && result.query != null)
+            try
             {
-                var query_parts = new Dictionary<string, object>();
+                var final = new Dictionary<string, object>();
 
-                if (!String.IsNullOrEmpty(req.withCTEidentifier))
-                    query_parts.Add("with_cte_identifier", req.withCTEidentifier);
-                if (!String.IsNullOrEmpty(req.withCTEexpression))
-                    query_parts.Add("with_cte_expression", req.withCTEexpression);
-                query_parts.Add("select", req.select);
-                if (!String.IsNullOrEmpty(req.from))
-                    query_parts.Add("from", req.from);
-                if (!String.IsNullOrEmpty(req.where))
-                    query_parts.Add("where", req.where);
-                if (!String.IsNullOrEmpty(req.groupBy))
-                    query_parts.Add("groupBy", req.groupBy);
-                if (!String.IsNullOrEmpty(req.having))
-                    query_parts.Add("having", req.having);
-                if (!String.IsNullOrEmpty(req.orderBy))
-                    query_parts.Add("orderBy", req.orderBy);
-                meta.Add("queryParts", query_parts);
+                Dictionary<string, object> meta = null;
+                if (!req.noMeta)
+                {
+                    meta = new Dictionary<string, object>();
+                    meta.Add("time", result.execTimeMsec);
+                }
 
-                meta.Add("query", result.query);
+                if (!req.noMeta && !req.noQuery && result.query != null)
+                {
+                    var query_parts = new Dictionary<string, object>();
 
-                // FIXME? value is always a raw string value. This is good for decimal/money types, maybe not so great for everything else.
-                meta.Add("parameters", req.parameters.Select(prm => new { name = prm.Name, type = prm.RawType, value = prm.RawValue }).ToArray());
+                    if (!String.IsNullOrEmpty(req.withCTEidentifier))
+                        query_parts.Add("with_cte_identifier", req.withCTEidentifier);
+                    if (!String.IsNullOrEmpty(req.withCTEexpression))
+                        query_parts.Add("with_cte_expression", req.withCTEexpression);
+                    query_parts.Add("select", req.select);
+                    if (!String.IsNullOrEmpty(req.from))
+                        query_parts.Add("from", req.from);
+                    if (!String.IsNullOrEmpty(req.where))
+                        query_parts.Add("where", req.where);
+                    if (!String.IsNullOrEmpty(req.groupBy))
+                        query_parts.Add("groupBy", req.groupBy);
+                    if (!String.IsNullOrEmpty(req.having))
+                        query_parts.Add("having", req.having);
+                    if (!String.IsNullOrEmpty(req.orderBy))
+                        query_parts.Add("orderBy", req.orderBy);
+                    meta.Add("queryParts", query_parts);
+
+                    meta.Add("query", result.query);
+
+                    // FIXME? value is always a raw string value. This is good for decimal/money types, maybe not so great for everything else.
+                    meta.Add("parameters", req.parameters.Select(prm => new { name = prm.Name, type = prm.RawType, value = prm.RawValue }).ToArray());
+                }
+
+                object results;
+                switch (mode)
+                {
+                    case JsonOutput.Dictionary:
+                        {
+                            List<object> headers;
+                            results = getJSONDictionary(result.header, result.rows, out headers);
+                            if (!req.noMeta && !req.noHeader)
+                            {
+                                meta.Add("header", headers);
+                            }
+                            break;
+                        }
+                    case JsonOutput.KeyValuePair:
+                        {
+                            List<object> headers;
+                            results = getJSONKeyValuePairs(result.header, result.rows, out headers);
+                            if (!req.noMeta && !req.noHeader)
+                            {
+                                meta.Add("header", headers);
+                            }
+                            break;
+                        }
+                    case JsonOutput.Array:
+                        {
+                            List<object> headers;
+                            results = getJSONArrays(result.header, result.rows, out headers);
+                            if (!req.noMeta && !req.noHeader)
+                            {
+                                meta.Add("header", headers);
+                            }
+                            break;
+                        }
+                    case JsonOutput.Inflated:
+                        results = getJSONInflated(result.header, result.rows);
+                        break;
+                    default:
+                        throw new JsonException(400, "Unknown JSON serialization type");
+                }
+
+                completed(new JsonResult(results, meta));
             }
-
-            object results = getJSONDictionary(meta, mode, req.noQuery, req.noHeader, result.header, result.rows);
-
-            completed(new JsonResult(results, meta));
+            catch (Exception ex)
+            {
+                completed(ex);
+                return;
+            }
         }
 
-        private object getJSONDictionary(Dictionary<string, object> meta, JsonOutput mode, bool noQuery, bool noHeader, string[,] header, IEnumerable<IEnumerable<object>> rows)
+        private object getJSONInflated(string[,] header, IEnumerable<IEnumerable<object>> rows)
+        {
+            var list = new List<Dictionary<string, object>>();
+            foreach (IEnumerable<object> row in rows)
+            {
+                var result = new Dictionary<string, object>();
+                Dictionary<string, object> addTo = result;
+
+                using (var rowen = row.GetEnumerator())
+                    for (int i = 0; rowen.MoveNext(); ++i)
+                    {
+                        string name = header[i, 0];
+                        object col = rowen.Current;
+
+                        if (name.StartsWith("__obj$"))
+                        {
+                            string objname = name.Substring(6);
+                            if (String.IsNullOrEmpty(objname))
+                                addTo = result;
+                            else
+                            {
+                                if (col == DBNull.Value)
+                                    addTo = null;
+                                else
+                                    addTo = new Dictionary<string, object>();
+                                if (result.ContainsKey(objname))
+                                    throw new JsonException(400, String.Format("{0} key specified more than once", name));
+                                result.Add(objname, addTo);
+                            }
+                            continue;
+                        }
+
+                        if (addTo == null) continue;
+                        addTo.Add(name, col);
+                    }
+
+                list.Add(result);
+            }
+            return list;
+        }
+
+        private object getJSONDictionary(string[,] header, IEnumerable<IEnumerable<object>> rows, out List<object> headers)
         {
             // Convert the header string[,] to { name, type }[]:
-            List<object> headers = new List<object>(header.GetUpperBound(0) + 1);
+            headers = new List<object>(header.GetUpperBound(0) + 1);
             string[] uniqname = new string[header.GetUpperBound(0) + 1];
             HashSet<string> namesSet = new HashSet<string>();
 
@@ -594,91 +692,93 @@ namespace AdHocQuery
             {
                 headers.Add(new { name = header[i, 0], type = header[i, 1], ordinal = i });
 
-                if (mode == JsonOutput.Dictionary)
-                {
-                    // Generate a unique name for this column:
-                    string jsonname = header[i, 0];
-                    if (jsonname == String.Empty) jsonname = "blank";
+                // Generate a unique name for this column:
+                string jsonname = header[i, 0];
+                if (jsonname == String.Empty) jsonname = "blank";
 
-                    string name = jsonname;
+                string name = jsonname;
 
-                    int ctr = 0;
-                    while (namesSet.Contains(name)) name = jsonname + "_" + (++ctr).ToString();
+                int ctr = 0;
+                while (namesSet.Contains(name)) name = jsonname + "_" + (++ctr).ToString();
 
-                    namesSet.Add(name);
-                    uniqname[i] = name;
-                }
+                namesSet.Add(name);
+                uniqname[i] = name;
             }
 
-            if (!noHeader)
+            var list = new List<Dictionary<string, object>>();
+            foreach (IEnumerable<object> row in rows)
             {
-                meta.Add("header", headers);
-            }
+                var result = new Dictionary<string, object>();
 
-            // Convert each result row:
-            if (mode == JsonOutput.Dictionary)
+                // { "colname1": "value1", "colname2": "value2" ... }
+                using (var rowen = row.GetEnumerator())
+                    for (int i = 0; rowen.MoveNext(); ++i)
+                    {
+                        object col = rowen.Current;
+
+                        result.Add(uniqname[i], col);
+                    }
+
+                list.Add(result);
+            }
+            return list;
+        }
+
+        private object getJSONKeyValuePairs(string[,] header, IEnumerable<IEnumerable<object>> rows, out List<object> headers)
+        {
+            // Convert the header string[,] to { name, type }[]:
+            headers = new List<object>(header.GetUpperBound(0) + 1);
+
+            for (int i = 0; i <= header.GetUpperBound(0); ++i)
             {
-                var list = new List<Dictionary<string, object>>();
-                foreach (IEnumerable<object> row in rows)
-                {
-                    var result = new Dictionary<string, object>();
-
-                    // { "colname1": "value1", "colname2": "value2" ... }
-                    using (var rowen = row.GetEnumerator())
-                        for (int i = 0; rowen.MoveNext(); ++i)
-                        {
-                            object col = rowen.Current;
-                            // TODO: convert DateTime values so we don't end up with the MS "standard" '\/Date()\/' format.
-
-                            result.Add(uniqname[i], col);
-                        }
-
-                    list.Add(result);
-                }
-                return list;
+                headers.Add(new { name = header[i, 0], type = header[i, 1], ordinal = i });
             }
-            else if (mode == JsonOutput.KeyValuePair)
+
+            var list = new List<object>();
+            foreach (IEnumerable<object> row in rows)
             {
-                var list = new List<object>();
-                foreach (IEnumerable<object> row in rows)
-                {
-                    var result = new List<Dictionary<string, object>>();
+                var result = new List<Dictionary<string, object>>();
 
-                    // [ { "name": "col1", "value": 1 }, { "name": "col2", "value": null } ... ]
-                    using (var rowen = row.GetEnumerator())
-                        for (int i = 0; rowen.MoveNext(); ++i)
-                        {
-                            object col = rowen.Current;
-                            result.Add(new Dictionary<string, object> { { "name", header[i, 0] }, { "value", col } });
-                        }
+                // [ { "name": "col1", "value": 1 }, { "name": "col2", "value": null } ... ]
+                using (var rowen = row.GetEnumerator())
+                    for (int i = 0; rowen.MoveNext(); ++i)
+                    {
+                        object col = rowen.Current;
+                        result.Add(new Dictionary<string, object> { { "name", header[i, 0] }, { "value", col } });
+                    }
 
-                    list.Add(result);
-                }
-                return list;
+                list.Add(result);
             }
-            else if (mode == JsonOutput.Array)
+            return list;
+
+        }
+
+        private object getJSONArrays(string[,] header, IEnumerable<IEnumerable<object>> rows, out List<object> headers)
+        {
+            // Convert the header string[,] to { name, type }[]:
+            headers = new List<object>(header.GetUpperBound(0) + 1);
+
+            for (int i = 0; i <= header.GetUpperBound(0); ++i)
             {
-                var list = new List<List<object>>();
-                foreach (IEnumerable<object> row in rows)
-                {
-                    var result = new List<object>();
-
-                    // [ value1, value2, value3, ... ]
-                    using (var rowen = row.GetEnumerator())
-                        for (int i = 0; rowen.MoveNext(); ++i)
-                        {
-                            object col = rowen.Current;
-                            result.Add(col);
-                        }
-
-                    list.Add(result);
-                }
-                return list;
+                headers.Add(new { name = header[i, 0], type = header[i, 1], ordinal = i });
             }
-            else
+
+            var list = new List<List<object>>();
+            foreach (IEnumerable<object> row in rows)
             {
-                throw new JsonException(400, "Unknown JSON mode!");
+                var result = new List<object>();
+
+                // [ value1, value2, value3, ... ]
+                using (var rowen = row.GetEnumerator())
+                    for (int i = 0; rowen.MoveNext(); ++i)
+                    {
+                        object col = rowen.Current;
+                        result.Add(col);
+                    }
+
+                list.Add(result);
             }
+            return list;
         }
 
         private string getFormOrQueryValue(string name)
