@@ -442,24 +442,21 @@ namespace AdHocQuery
 
         private bool convertParameters(out ParameterValue[] parameters)
         {
-            // Validate parameters:
-            string[] prmNames, prmTypes, prmValues;
-            prmNames = getFormOrQueryValues("pn") ?? new string[0];
-            prmTypes = getFormOrQueryValues("pt") ?? new string[0];
-            prmValues = getFormOrQueryValues("pv") ?? new string[0];
-
-            System.Diagnostics.Debug.Assert(prmNames.Length == prmTypes.Length);
-            System.Diagnostics.Debug.Assert(prmTypes.Length == prmValues.Length);
+            var pq = (
+                from key in ctx.Request.QueryString.AllKeys
+                where key.StartsWith("@")
+                let sep = key.LastIndexOf('|')
+                where sep >= 0
+                select new { name = key.Substring(0, sep), type = key.Substring(sep + 1), value = ctx.Request.QueryString[key] }
+            ).ToList();
 
             bool parametersValid = true;
-            parameters = new ParameterValue[prmNames.Length];
-
-            for (int i = 0; i < prmNames.Length; ++i)
+            parameters = new ParameterValue[pq.Count];
+            for (int i = 0; i < pq.Count; ++i)
             {
-                parameters[i] = new ParameterValue(prmNames[i], prmTypes[i], prmValues[i]);
+                parameters[i] = new ParameterValue(pq[i].name, pq[i].type, pq[i].value);
                 if (!parameters[i].IsValid) parametersValid = false;
             }
-
             return parametersValid;
         }
 
